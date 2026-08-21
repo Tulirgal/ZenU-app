@@ -35,6 +35,7 @@ dependencies:
   # Audio (mindfulness JPMR player) 
   audioplayers: ^6.0.0 
   intl: ^0.20.3
+  http: ^1.6.0
 
 dev_dependencies: 
   flutter_test: 

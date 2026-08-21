@@ -1,39 +1,42 @@
-import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const ZenUApp());
-}
-
-class ZenUApp extends StatefulWidget {
-  const ZenUApp({super.key});
-
-  @override
-  State<ZenUApp> createState() => _ZenUAppState();
-}
-
-class _ZenUAppState extends State<ZenUApp> {
-  @override
-  void initState() {
-    super.initState();
-    // Simulate greeting sequence timer
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ZenU',
-      home: Scaffold(
-        appBar: AppBar(title: const Text('ZenU')),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Design System Showcase'),
-              Text('TEMPORARY DEVELOPMENT PLACEHOLDER'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+import 'package:flutter/material.dart'; 
+import 'package:flutter/services.dart'; 
+import 'package:provider/provider.dart'; 
+import 'package:hive_flutter/hive_flutter.dart'; 
+import 'core/auth/auth_service.dart'; 
+import 'core/theme/app_theme.dart'; 
+import 'app_router.dart'; 
+ 
+void main() async { 
+  WidgetsFlutterBinding.ensureInitialized(); 
+  await Hive.initFlutter(); 
+ 
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle( 
+    statusBarColor: Colors.transparent, 
+    statusBarIconBrightness: Brightness.light, 
+  )); 
+  SystemChrome.setPreferredOrientations([ 
+    DeviceOrientation.portraitUp, 
+    DeviceOrientation.portraitDown, 
+  ]); 
+ 
+  runApp( 
+    ChangeNotifierProvider( 
+      create: (_) => AuthService()..initialize(), 
+      child: const ZenUApp(), 
+    ), 
+  ); 
+} 
+ 
+class ZenUApp extends StatelessWidget { 
+  const ZenUApp({super.key}); 
+ 
+  @override 
+  Widget build(BuildContext context) { 
+    return MaterialApp.router( 
+      title: 'ZenU', 
+      debugShowCheckedModeBanner: false, 
+      theme: AppTheme.theme, 
+      routerConfig: AppRouter.router(context), 
+    ); 
+  } 
 }

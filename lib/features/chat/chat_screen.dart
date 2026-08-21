@@ -1,51 +1,55 @@
+import 'dart:math' as math;
+import 'dart:ui'; 
 import 'package:flutter/material.dart'; 
+import 'package:go_router/go_router.dart'; 
 import 'package:google_fonts/google_fonts.dart'; 
-import 'package:flutter_animate/flutter_animate.dart'; 
-import '../../core/api/api_client.dart'; 
-import '../../core/theme/module_themes.dart'; 
+
+import '../../core/theme/app_theme.dart'; 
 import '../../shared/widgets/module_background.dart'; 
+ 
+class ChatMessage { 
+  final int id; 
+  final String role; 
+  final String content; 
+ 
+  ChatMessage({required this.id, required this.role, required this.content}); 
+} 
  
 class ChatScreen extends StatefulWidget { 
   const ChatScreen({super.key}); 
+ 
   @override 
   State<ChatScreen> createState() => _ChatScreenState(); 
 } 
  
-class _ChatScreenState extends State<ChatScreen> { 
-  final _msgCtrl = TextEditingController(); 
-  final _scrollCtrl = ScrollController(); 
-   
-  final List<Map<String, dynamic>> _messages = [ 
-    { 
-      'role': 'assistant', 
-      'content': "Hello! I'm Seviyan, your wellness companion. Share what's on your mind — I'm here for you. 🌿" 
-    } 
+class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin { 
+  final List<ChatMessage> _messages = []; 
+  final TextEditingController _inputCtrl = TextEditingController(); 
+  final ScrollController _scrollCtrl = ScrollController(); 
+  bool _isSending = false; 
+ 
+  static const _quickPrompts = [ 
+    "I'm feeling overwhelmed by school", 
+    'Help me unwind after a long day', 
+    'I need a gentle pep talk', 
+    "Let's plan one small next step", 
   ]; 
-   
-  String? _sessionId; 
-  bool _isTyping = false; 
-  late final ModuleTheme theme; 
  
   @override 
   void initState() { 
     super.initState(); 
-    theme = ModuleThemes.chat; 
-    _logEngagement(); 
-  } 
- 
-  Future<void> _logEngagement() async { 
-    try { 
-      final c = await ApiClient.getInstance(); 
-      await c.post('/api/signals/engagement', data: { 
-        'module_id': 'chatbot_seviyan', 
-        'event_type': 'opened' 
-      }); 
-    } catch (_) {} 
+    _messages.add( 
+      ChatMessage( 
+        id: -1, 
+        role: 'assistant', 
+        content: "Hello, I'm Seviyan. Share what's on your mind, and we'll work through it together.", 
+      ), 
+    ); 
   } 
  
   @override 
   void dispose() { 
-    _msgCtrl.dispose(); 
+    _inputCtrl.dispose(); 
     _scrollCtrl.dispose(); 
     super.dispose(); 
   } 
@@ -62,158 +66,228 @@ class _ChatScreenState extends State<ChatScreen> {
     }); 
   } 
  
-  Future<void> _send() async { 
-    final text = _msgCtrl.text.trim(); 
-    if (text.isEmpty) return; 
- 
-    _msgCtrl.clear(); 
+  void _sendMessage(String text) async { 
+    if (text.trim().isEmpty || _isSending) return; 
+     
     setState(() { 
-      _messages.add({'role': 'user', 'content': text}); 
-      _isTyping = true; 
+      _messages.add(ChatMessage(id: DateTime.now().millisecondsSinceEpoch, role: 'user', content: text.trim())); 
+      _isSending = true; 
     }); 
+    _inputCtrl.clear(); 
     _scrollToBottom(); 
  
-    try { 
-      final c = await ApiClient.getInstance(); 
-      final reqData = {'message': text}; 
-      if (_sessionId != null) { 
-        reqData['session_id'] = _sessionId!; 
-      } 
+    // Simulate network delay 
+    await Future.delayed(const Duration(milliseconds: 1500)); 
  
-      final res = await c.post('/api/chat/message', data: reqData); 
-       
-      if (res.statusCode == 200 && mounted) { 
-        setState(() { 
-          if (res.data['session_id'] != null) { 
-            _sessionId = res.data['session_id'] as String; 
-          } 
-          _messages.add({'role': 'assistant', 'content': res.data['reply'] ?? ''}); 
-          _isTyping = false; 
-        }); 
-        _scrollToBottom(); 
-      } 
-    } catch (_) { 
-      if (mounted) { 
-        setState(() { 
-          _messages.add({'role': 'assistant', 'content': "I'm having trouble connecting right now. Please try again later."}); 
-          _isTyping = false; 
-        }); 
-        _scrollToBottom(); 
-      } 
-    } 
-  } 
- 
-  void _reset() { 
     setState(() { 
-      _sessionId = null; 
-      _messages.clear(); 
-      _messages.add({ 
-        'role': 'assistant', 
-        'content': "Hello! I'm Seviyan, your wellness companion. Share what's on your mind — I'm here for you. 🌿" 
-      }); 
+      _messages.add(ChatMessage(id: DateTime.now().millisecondsSinceEpoch, role: 'assistant', content: 'This is a simulated response. The real backend integration will process: "$text"')); 
+      _isSending = false; 
     }); 
+    _scrollToBottom(); 
   } 
  
   @override 
   Widget build(BuildContext context) { 
     return Scaffold( 
-      extendBodyBehindAppBar: true, 
-      appBar: AppBar( 
-        backgroundColor: Colors.transparent, 
-        elevation: 0, 
-        iconTheme: IconThemeData(color: theme.textPrimary), 
-        title: Text('💬 Seviyan', style: GoogleFonts.inter(color: theme.textPrimary, fontWeight: FontWeight.w600)), 
-        actions: [ 
-          IconButton( 
-            icon: const Icon(Icons.refresh), 
-            onPressed: _reset, 
-            tooltip: 'Reset Chat', 
-          ), 
-        ], 
-      ), 
       body: ModuleBackground( 
         moduleKey: 'chat', 
         child: SafeArea( 
           child: Column( 
             children: [ 
+              // Header 
+              Padding( 
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
+                child: Row( 
+                  children: [ 
+                    IconButton( 
+                      onPressed: () => context.pop(), 
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20), 
+                      color: ZenTokens.fg, 
+                    ), 
+                    const SizedBox(width: 8), 
+                    Text( 
+                      'Chat', 
+                      style: GoogleFonts.inter( 
+                        fontSize: 18, 
+                        fontWeight: FontWeight.w600, 
+                        color: ZenTokens.fg, 
+                      ), 
+                    ), 
+                  ], 
+                ), 
+              ), 
+ 
+              // Messages 
               Expanded( 
                 child: ListView.builder( 
                   controller: _scrollCtrl, 
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0), 
-                  itemCount: _messages.length + (_isTyping ? 1 : 0), 
-                  itemBuilder: (context, i) { 
-                    if (i == _messages.length) { 
-                      return const _TypingIndicator().animate().fadeIn(); 
-                    } 
-                    final msg = _messages[i]; 
-                    final isUser = msg['role'] == 'user'; 
-                    return Align( 
-                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft, 
-                      child: Container( 
-                        margin: const EdgeInsets.only(bottom: 12), 
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75), 
-                        decoration: BoxDecoration( 
-                          color: isUser ? theme.accentColor : theme.cardBg, 
-                          borderRadius: BorderRadius.circular(20).copyWith( 
-                            bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20), 
-                            bottomLeft: !isUser ? const Radius.circular(4) : const Radius.circular(20), 
-                          ), 
-                          border: isUser ? null : Border.all(color: theme.cardBorder), 
-                        ), 
-                        child: Text( 
-                          msg['content'] as String, 
-                          style: GoogleFonts.inter( 
-                            color: isUser ? Colors.white : theme.textPrimary, 
-                            fontSize: 15, 
-                          ), 
-                        ), 
-                      ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0), 
-                    ); 
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24), 
+                  itemCount: _messages.length, 
+                  itemBuilder: (context, index) { 
+                    final msg = _messages[index]; 
+                    return _ChatBubble(message: msg); 
                   }, 
                 ), 
               ), 
+ 
+              // Footer / Input Area 
               Container( 
-                padding: const EdgeInsets.all(16), 
-                decoration: BoxDecoration( 
-                  color: theme.cardBg.withValues(alpha: 0.8), 
-                  border: Border(top: BorderSide(color: theme.cardBorder)), 
-                ), 
-                child: Row( 
+                width: double.infinity, 
+                constraints: const BoxConstraints(maxWidth: 768), 
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), 
+                child: Column( 
+                  mainAxisSize: MainAxisSize.min, 
                   children: [ 
-                    Expanded( 
-                      child: TextField( 
-                        controller: _msgCtrl, 
-                        style: GoogleFonts.inter(color: theme.textPrimary), 
-                        decoration: InputDecoration( 
-                          hintText: 'Type a message...', 
-                          hintStyle: GoogleFonts.inter(color: theme.textSecondary), 
-                          filled: true, 
-                          fillColor: theme.cardBg, 
-                          border: OutlineInputBorder( 
-                            borderRadius: BorderRadius.circular(24), 
-                            borderSide: BorderSide(color: theme.cardBorder), 
+                    // Seviyan Companion & Thought Cloud 
+                    SizedBox( 
+                      height: 64, 
+                      child: Stack( 
+                        alignment: Alignment.bottomCenter, 
+                        clipBehavior: Clip.none, 
+                        children: [ 
+                          // Glow 
+                          Container( 
+                            width: 64, 
+                            height: 24, 
+                            decoration: BoxDecoration( 
+                              borderRadius: BorderRadius.circular(100), 
+                              boxShadow: [ 
+                                BoxShadow( 
+                                  color: const Color(0xFF93C5FD).withValues(alpha: 0.35), 
+                                  blurRadius: 12, 
+                                  spreadRadius: 8, 
+                                ) 
+                              ], 
+                            ), 
                           ), 
-                          enabledBorder: OutlineInputBorder( 
-                            borderRadius: BorderRadius.circular(24), 
-                            borderSide: BorderSide(color: theme.cardBorder), 
+                          // Panda Icon Placeholder 
+                          Container( 
+                            width: 64, 
+                            height: 64, 
+                            decoration: BoxDecoration( 
+                              color: ZenTokens.surface, 
+                              shape: BoxShape.circle, 
+                              border: Border.all(color: ZenTokens.borderSoft), 
+                            ), 
+                            child: Center( 
+                              child: Text('🐼', style: TextStyle(fontSize: 32)), 
+                            ), 
                           ), 
-                          focusedBorder: OutlineInputBorder( 
-                            borderRadius: BorderRadius.circular(24), 
-                            borderSide: BorderSide(color: theme.accentColor), 
-                          ), 
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14), 
-                        ), 
-                        onSubmitted: (_) => _send(), 
+                          if (_isSending) 
+                            Positioned( 
+                              right: -10, 
+                              top: 0, 
+                              child: const _ThoughtCloud(), 
+                            ), 
+                        ], 
                       ), 
                     ), 
-                    const SizedBox(width: 12), 
-                    CircleAvatar( 
-                      radius: 24, 
-                      backgroundColor: theme.accentColor, 
-                      child: IconButton( 
-                        icon: const Icon(Icons.send_rounded, color: Colors.white), 
-                        onPressed: _isTyping ? null : _send, 
+ 
+                    const SizedBox(height: 16), 
+ 
+                    // Quick Prompts 
+                    if (_messages.length <= 1) 
+                      Wrap( 
+                        spacing: 8, 
+                        runSpacing: 8, 
+                        alignment: WrapAlignment.center, 
+                        children: _quickPrompts.map((p) { 
+                          return GestureDetector( 
+                            onTap: () => _sendMessage(p), 
+                            child: Container( 
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), 
+                              decoration: BoxDecoration( 
+                                color: const Color(0xFFF4F7FC), 
+                                borderRadius: BorderRadius.circular(16), 
+                                border: Border.all( 
+                                  color: ZenTokens.primary.withValues(alpha: 0.22), 
+                                ), 
+                                boxShadow: [ 
+                                  BoxShadow( 
+                                    color: const Color(0xFF0F172A).withValues(alpha: 0.05), 
+                                    blurRadius: 14, 
+                                    offset: const Offset(0, 4), 
+                                    spreadRadius: -10, 
+                                  ) 
+                                ], 
+                              ), 
+                              child: Text( 
+                                p, 
+                                style: GoogleFonts.inter( 
+                                  fontSize: 12, 
+                                  fontWeight: FontWeight.w500, 
+                                  color: const Color(0xFF1B264B), 
+                                ), 
+                              ), 
+                            ), 
+                          ); 
+                        }).toList(), 
+                      ), 
+                     
+                    const SizedBox(height: 16), 
+ 
+                    // Input Field 
+                    Container( 
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
+                      decoration: BoxDecoration( 
+                        color: Colors.white.withValues(alpha: 0.12), 
+                        borderRadius: BorderRadius.circular(22), 
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.25)), 
+                        boxShadow: [ 
+                          BoxShadow( 
+                            color: Colors.black.withValues(alpha: 0.15), 
+                            blurRadius: 32, 
+                            offset: const Offset(0, 10), 
+                            spreadRadius: -18, 
+                          ) 
+                        ], 
+                      ), 
+                      child: ClipRRect( 
+                        borderRadius: BorderRadius.circular(22), 
+                        child: BackdropFilter( 
+                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), 
+                          child: Row( 
+                            children: [ 
+                              Expanded( 
+                                child: TextField( 
+                                  controller: _inputCtrl, 
+                                  enabled: !_isSending, 
+                                  style: GoogleFonts.inter( 
+                                    fontSize: 14, 
+                                    color: Colors.white, 
+                                  ), 
+                                  decoration: InputDecoration( 
+                                    hintText: "Share what's on your mind…", 
+                                    hintStyle: GoogleFonts.inter( 
+                                      fontSize: 14, 
+                                      color: const Color(0xFFDBEAFE).withValues(alpha: 0.55), 
+                                    ), 
+                                    border: InputBorder.none, 
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12), 
+                                  ), 
+                                  onSubmitted: _sendMessage, 
+                                ), 
+                              ), 
+                              const SizedBox(width: 8), 
+                              GestureDetector( 
+                                onTap: () => _sendMessage(_inputCtrl.text), 
+                                child: Container( 
+                                  width: 32, 
+                                  height: 32, 
+                                  decoration: BoxDecoration( 
+                                    color: ZenTokens.primary, 
+                                    shape: BoxShape.circle, 
+                                  ), 
+                                  child: const Icon( 
+                                    Icons.send_rounded, 
+                                    color: Colors.white, 
+                                    size: 14, 
+                                  ), 
+                                ), 
+                              ), 
+                            ], 
+                          ), 
+                        ), 
                       ), 
                     ), 
                   ], 
@@ -227,41 +301,118 @@ class _ChatScreenState extends State<ChatScreen> {
   } 
 } 
  
-class _TypingIndicator extends StatelessWidget { 
-  const _TypingIndicator(); 
+class _ChatBubble extends StatelessWidget { 
+  final ChatMessage message; 
+ 
+  const _ChatBubble({required this.message}); 
  
   @override 
   Widget build(BuildContext context) { 
-    final theme = ModuleThemes.chat; 
-    return Align( 
-      alignment: Alignment.centerLeft, 
-      child: Container( 
-        margin: const EdgeInsets.only(bottom: 12), 
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16), 
-        decoration: BoxDecoration( 
-          color: theme.cardBg, 
-          borderRadius: BorderRadius.circular(20).copyWith( 
-            bottomLeft: const Radius.circular(4), 
-          ), 
-          border: Border.all(color: theme.cardBorder), 
-        ), 
-        child: Row( 
-          mainAxisSize: MainAxisSize.min, 
-          children: List.generate(3, (i) =>  
-            Container( 
-              margin: const EdgeInsets.symmetric(horizontal: 2), 
-              width: 8, height: 8, 
+    final isUser = message.role == 'user'; 
+     
+    return Padding( 
+      padding: const EdgeInsets.only(bottom: 16), 
+      child: Row( 
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start, 
+        children: [ 
+          Flexible( 
+            child: Container( 
+              constraints: const BoxConstraints(maxWidth: 320), // Approx 85% on mobile 
+              margin: EdgeInsets.only( 
+                left: isUser ? 32 : 0, 
+                right: isUser ? 0 : 32, 
+              ), 
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), 
               decoration: BoxDecoration( 
-                color: theme.textSecondary, 
+                color: isUser ? ZenTokens.primary : Colors.white, 
+                border: isUser ? null : Border.all(color: ZenTokens.border), 
+                borderRadius: BorderRadius.only( 
+                  topLeft: const Radius.circular(20), 
+                  topRight: const Radius.circular(20), 
+                  bottomLeft: Radius.circular(isUser ? 20 : 8), 
+                  bottomRight: Radius.circular(isUser ? 8 : 20), 
+                ), 
+                boxShadow: [ 
+                  BoxShadow( 
+                    color: const Color(0xFF1E295A).withValues(alpha: 0.05), 
+                    blurRadius: 8, 
+                    offset: const Offset(0, 4), 
+                  ) 
+                ], 
+              ), 
+              child: Text( 
+                message.content, 
+                style: GoogleFonts.inter( 
+                  fontSize: 16, 
+                  height: 1.6, // leading-relaxed 
+                  color: isUser ? Colors.white : ZenTokens.fg, 
+                ), 
+              ), 
+            ), 
+          ), 
+        ], 
+      ), 
+    ); 
+  } 
+} 
+ 
+class _ThoughtCloud extends StatefulWidget { 
+  const _ThoughtCloud(); 
+ 
+  @override 
+  State<_ThoughtCloud> createState() => _ThoughtCloudState(); 
+} 
+ 
+class _ThoughtCloudState extends State<_ThoughtCloud> with SingleTickerProviderStateMixin { 
+  late AnimationController _ctrl; 
+ 
+  @override 
+  void initState() { 
+    super.initState(); 
+    _ctrl = AnimationController( 
+      vsync: this, 
+      duration: const Duration(milliseconds: 1600), 
+    )..repeat(); 
+  } 
+ 
+  @override 
+  void dispose() { 
+    _ctrl.dispose(); 
+    super.dispose(); 
+  } 
+ 
+  @override 
+  Widget build(BuildContext context) { 
+    return Row( 
+      crossAxisAlignment: CrossAxisAlignment.end, 
+      children: List.generate(3, (index) { 
+        final size = 3.0 + (index * 1.5); 
+        final mb = index == 0 ? 1.0 : (index == 1 ? 4.0 : 7.0); 
+         
+        return AnimatedBuilder( 
+          animation: _ctrl, 
+          builder: (context, child) { 
+            // Staggered sine wave for opacity 
+            // Delays: 0, 0.18, 0.36 
+            final delay = index * 0.1125; // 0.18s / 1.6s 
+            final t = (_ctrl.value - delay) % 1.0; 
+            final val = t < 0 ? t + 1.0 : t; 
+             
+            // Calculate opacity from 0.3 -> 0.7 -> 0.3 using sine 
+            final opacity = 0.3 + (0.4 * (0.5 * (1 - (math.cos(val * 2 * 3.14159))))); 
+             
+            return Container( 
+              margin: EdgeInsets.only(left: 2, bottom: mb), 
+              width: size, 
+              height: size, 
+              decoration: BoxDecoration( 
+                color: Colors.white.withValues(alpha: opacity), 
                 shape: BoxShape.circle, 
               ), 
-            ).animate(onPlay: (c) => c.repeat(), delay: (i * 200).ms) 
-             .fade(duration: 300.ms, begin: 0.3, end: 1.0) 
-             .then() 
-             .fade(duration: 300.ms, begin: 1.0, end: 0.3) 
-          ), 
-        ), 
-      ), 
+            ); 
+          }, 
+        ); 
+      }), 
     ); 
   } 
 }

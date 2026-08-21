@@ -53,13 +53,18 @@ class AuthService extends ChangeNotifier {
     return false; 
   } 
  
-  Future<bool> signUp(String email, String password, String name) async { 
+  Future<bool> signUp(String email, String password, String name, [String? username]) async { 
     _loading = true; 
     notifyListeners(); 
     try { 
       final client = await ApiClient.getInstance(); 
       final res    = await client.post('/api/auth/sign-up', 
-          data: {'email': email, 'password': password, 'name': name}); 
+          data: {
+            'email': email, 
+            'password': password, 
+            'name': name,
+            if (username != null && username.isNotEmpty) 'username': username,
+          }); 
       if ((res.statusCode == 200 || res.statusCode == 201) && 
           res.data?['user'] != null) { 
         await Future.delayed(const Duration(milliseconds: 150)); 

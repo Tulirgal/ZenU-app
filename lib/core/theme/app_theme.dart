@@ -36,7 +36,7 @@ class AppTheme {
       ), 
     ), 
     appBarTheme: AppBarTheme( 
-      backgroundColor: Colors.white.withOpacity(0.8), 
+      backgroundColor: Colors.white.withValues(alpha: 0.8), 
       elevation: 0, 
       scrolledUnderElevation: 0, 
       titleTextStyle: GoogleFonts.inter( 

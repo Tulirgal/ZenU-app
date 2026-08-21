@@ -1,12 +1,39 @@
 import 'package:flutter/material.dart'; 
 import 'package:go_router/go_router.dart'; 
 import 'package:google_fonts/google_fonts.dart'; 
-import 'package:flutter_animate/flutter_animate.dart'; 
-import '../../../core/theme/module_themes.dart'; 
+import '../../../core/theme/app_theme.dart'; 
+ 
+class _ModuleData { 
+  final String id; 
+  final String name; 
+  final String description; 
+  final String route; 
+  final String emoji; 
+ 
+  const _ModuleData({ 
+    required this.id, 
+    required this.name, 
+    required this.description, 
+    required this.route, 
+    required this.emoji, 
+  }); 
+} 
+ 
+const _modules = [ 
+  _ModuleData(id: 'breathing', name: 'Breathing', description: 'Box, 4-7-8, and deep calm.', route: '/breathing', emoji: '🌬️'), 
+  _ModuleData(id: 'mindfulness', name: 'Mindfulness', description: 'Quick grounding exercises.', route: '/mindfulness', emoji: '🧘'), 
+  _ModuleData(id: 'diary', name: 'Journal', description: 'Free-write your thoughts.', route: '/diary', emoji: '📝'), 
+  _ModuleData(id: 'gratitude', name: 'Gratitude', description: 'Tiny thankful moments.', route: '/gratitude', emoji: '✨'), 
+  _ModuleData(id: 'bubble', name: 'Bubbles', description: 'Pop your worries away.', route: '/bubble', emoji: '🫧'), 
+  _ModuleData(id: 'burst', name: 'Burst', description: 'Release built-up tension.', route: '/burst', emoji: '🔥'), 
+  _ModuleData(id: 'scribble', name: 'Scribble', description: 'Scribble it all out.', route: '/scribble', emoji: '✏️'), 
+  _ModuleData(id: 'doodle', name: 'Doodle', description: 'Draw to relax.', route: '/doodle', emoji: '🎨'), 
+  _ModuleData(id: 'healing_garden', name: 'Garden', description: 'Grow your streak.', route: '/healing-garden', emoji: '🌱'), 
+  _ModuleData(id: 'inner_compass', name: 'Compass', description: 'Find your emotional north.', route: '/inner-compass', emoji: '🧭'), 
+]; 
  
 class ModuleGrid extends StatefulWidget { 
-  final ModuleTheme theme; 
-  const ModuleGrid({super.key, required this.theme}); 
+  const ModuleGrid({super.key}); 
  
   @override 
   State<ModuleGrid> createState() => _ModuleGridState(); 
@@ -14,83 +41,147 @@ class ModuleGrid extends StatefulWidget {
  
 class _ModuleGridState extends State<ModuleGrid> { 
   bool _showAll = false; 
- 
-  static const _modules = [ 
-    {'id': 'breathing',         'name': 'Zen Breath Zone',   'desc': 'A gentle rhythm for your nervous system.', 'route': '/breathing',      'emoji': '🌬'}, 
-    {'id': 'mindfulness',       'name': 'Meditate',          'desc': 'Stillness in a few quiet minutes.',         'route': '/mindfulness',    'emoji': '🧘'}, 
-    {'id': 'chatbot_seviyan',   'name': 'Seviyan',           'desc': 'Talk it through with a calm companion.',    'route': '/chat',           'emoji': '💬'}, 
-    {'id': 'diary',             'name': 'My Diary',          'desc': 'Reflect on your day.',                     'route': '/diary',          'emoji': '📖'}, 
-    {'id': 'journal_gratitude', 'name': 'Gratitude Journal', 'desc': 'Count your blessings.',                    'route': '/gratitude',      'emoji': '🌸'}, 
-    {'id': 'doodle_dreams',     'name': 'Doodle Dreams',     'desc': 'Soft patterns when words feel heavy.',     'route': '/doodle',         'emoji': '🎨'}, 
-    {'id': 'bubble_canvas',     'name': 'Bubble Canvas',     'desc': 'Pop stress away.',                         'route': '/bubble',         'emoji': '🫧'}, 
-    {'id': 'burst_it_out',      'name': 'Burst It Out',      'desc': 'Release when energy builds.',              'route': '/burst',          'emoji': '💥'}, 
-    {'id': 'scribble_pad',      'name': 'Scribble Pad',      'desc': 'Express freely.',                          'route': '/scribble',       'emoji': '✏'}, 
-    {'id': 'healing_garden',    'name': 'Healing Garden',    'desc': 'Grow your streak.',                        'route': '/healing-garden', 'emoji': '🌿'}, 
-    {'id': 'inner_compass',     'name': 'Inner Compass',     'desc': 'Find your direction.',                     'route': '/inner-compass',  'emoji': '🧭'}, 
-  ]; 
- 
-  static const _initial = 6; 
+  static const int _initialShow = 6; 
  
   @override 
   Widget build(BuildContext context) { 
-    final visible = _showAll ? _modules : _modules.take(_initial).toList(); 
-    return Column(children: [ 
-      GridView.builder( 
-        shrinkWrap: true, 
-        physics: const NeverScrollableScrollPhysics(), 
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount( 
-          crossAxisCount: 2, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 1.6, 
+    final isDesktop = MediaQuery.of(context).size.width >= 768; 
+    final visibleModules = _showAll ? _modules : _modules.take(_initialShow).toList(); 
+ 
+    return Column( 
+      crossAxisAlignment: CrossAxisAlignment.start, 
+      children: [ 
+        Padding( 
+          padding: const EdgeInsets.symmetric(horizontal: 16), 
+          child: Text( 
+            'Your wellness space', 
+            style: GoogleFonts.inter( 
+              fontSize: 15, 
+              fontWeight: FontWeight.w600, 
+              color: ZenTokens.fg, 
+            ), 
+          ), 
         ), 
-        itemCount: visible.length, 
-        itemBuilder: (_, i) => _ModuleTile(m: visible[i], theme: widget.theme) 
-            .animate().fadeIn(delay: Duration(milliseconds: i * 35)), 
-      ), 
-      const SizedBox(height: 10), 
-      if (!_showAll && _modules.length > _initial) 
-        TextButton.icon( 
-          onPressed: () => setState(() => _showAll = true), 
-          icon: Icon(Icons.expand_more_rounded, color: widget.theme.textSecondary, size: 16), 
-          label: Text('Show ${_modules.length - _initial} more', 
-            style: GoogleFonts.inter(color: widget.theme.textSecondary, fontSize: 13)), 
-        ) 
-      else if (_showAll) 
-        TextButton( 
-          onPressed: () => setState(() => _showAll = false), 
-          child: Text('Show less', 
-            style: GoogleFonts.inter(color: widget.theme.textSecondary, fontSize: 13)), 
-        ), 
-    ]); 
+        const SizedBox(height: 16), 
+        if (isDesktop || _showAll) 
+          Padding( 
+            padding: const EdgeInsets.symmetric(horizontal: 16), 
+            child: Wrap( 
+              spacing: 12, 
+              runSpacing: 12, 
+              children: visibleModules.map((m) => SizedBox( 
+                width: isDesktop ? 160 : (MediaQuery.of(context).size.width - 44) / 2, 
+                child: _buildCard(context, m, isDesktop), 
+              )).toList(), 
+            ), 
+          ) 
+        else 
+          SingleChildScrollView( 
+            scrollDirection: Axis.horizontal, 
+            padding: const EdgeInsets.symmetric(horizontal: 16), 
+            child: Row( 
+              children: visibleModules.map((m) => Padding( 
+                padding: const EdgeInsets.only(right: 12), 
+                child: SizedBox( 
+                  width: 132, 
+                  child: _buildCard(context, m, isDesktop), 
+                ), 
+              )).toList(), 
+            ), 
+          ), 
+        if (!_showAll && _modules.length > _initialShow) 
+          Padding( 
+            padding: const EdgeInsets.only(top: 16, bottom: 8), 
+            child: Center( 
+              child: GestureDetector( 
+                onTap: () => setState(() => _showAll = true), 
+                behavior: HitTestBehavior.opaque, 
+                child: Container( 
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), 
+                  decoration: BoxDecoration( 
+                    color: ZenTokens.surface, 
+                    borderRadius: BorderRadius.circular(ZenTokens.radiusXl), 
+                    border: Border.all(color: ZenTokens.borderSoft.withValues(alpha: 0.55)), 
+                  ), 
+                  child: Row( 
+                    mainAxisSize: MainAxisSize.min, 
+                    children: [ 
+                      Text( 
+                        'Show ${_modules.length - _initialShow} more modules', 
+                        style: GoogleFonts.inter( 
+                          fontSize: 14, 
+                          color: ZenTokens.fgMuted, 
+                        ), 
+                      ), 
+                      const SizedBox(width: 8), 
+                      const Icon(Icons.expand_more_rounded, size: 16, color: ZenTokens.fgMuted), 
+                    ], 
+                  ), 
+                ), 
+              ), 
+            ), 
+          ), 
+      ], 
+    ); 
   } 
-} 
  
-class _ModuleTile extends StatelessWidget { 
-  final Map<String, String> m; 
-  final ModuleTheme theme; 
-  const _ModuleTile({required this.m, required this.theme}); 
- 
-  @override 
-  Widget build(BuildContext context) => GestureDetector( 
-    onTap: () => context.push(m['route']!), 
-    child: Container( 
-      padding: const EdgeInsets.all(13), 
-      decoration: BoxDecoration( 
-        color: theme.cardBg, 
-        borderRadius: BorderRadius.circular(14), 
-        border: Border.all(color: theme.cardBorder), 
+  Widget _buildCard(BuildContext context, _ModuleData module, bool isDesktop) { 
+    return GestureDetector( 
+      onTap: () => context.go(module.route), 
+      child: Container( 
+        height: isDesktop ? 184 : 136, 
+        padding: const EdgeInsets.all(14), 
+        decoration: BoxDecoration( 
+          color: ZenTokens.surface, 
+          borderRadius: BorderRadius.circular(ZenTokens.radiusXl), 
+          border: Border.all(color: ZenTokens.borderSoft.withValues(alpha: 0.6)), 
+        ), 
+        child: Column( 
+          crossAxisAlignment: CrossAxisAlignment.start, 
+          children: [ 
+            Text( 
+              module.name, 
+              style: GoogleFonts.inter( 
+                fontSize: 13, 
+                fontWeight: FontWeight.w600, 
+                color: ZenTokens.fg, 
+                height: 1.2, 
+              ), 
+            ), 
+            const SizedBox(height: 4), 
+            Expanded( 
+              child: Text( 
+                module.description, 
+                maxLines: 2, 
+                overflow: TextOverflow.ellipsis, 
+                style: GoogleFonts.inter( 
+                  fontSize: 12, 
+                  color: ZenTokens.fgMuted, 
+                ), 
+              ), 
+            ), 
+            Row( 
+              mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+              crossAxisAlignment: CrossAxisAlignment.end, 
+              children: [ 
+                Container( 
+                  width: 28, 
+                  height: 28, 
+                  decoration: BoxDecoration( 
+                    color: ZenTokens.bgSubtle.withValues(alpha: 0.9), 
+                    shape: BoxShape.circle, 
+                  ), 
+                  child: const Icon(Icons.arrow_forward_rounded, size: 14, color: ZenTokens.fgMuted), 
+                ), 
+                Text( 
+                  module.emoji, 
+                  style: const TextStyle(fontSize: 24), 
+                ), 
+              ], 
+            ), 
+          ], 
+        ), 
       ), 
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, 
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-        children: [ 
-          Text(m['emoji']!, style: const TextStyle(fontSize: 22)), 
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ 
-            Text(m['name']!, style: GoogleFonts.inter( 
-              fontSize: 13, fontWeight: FontWeight.w600, color: theme.textPrimary, 
-            )), 
-            const SizedBox(height: 2), 
-            Text(m['desc']!, style: GoogleFonts.inter(fontSize: 10, color: theme.textSecondary), 
-              maxLines: 2, overflow: TextOverflow.ellipsis), 
-          ]), 
-        ]), 
-    ), 
-  ); 
+    ); 
+  } 
 }

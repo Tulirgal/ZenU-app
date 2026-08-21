@@ -1,101 +1,168 @@
 import 'package:flutter/material.dart'; 
 import 'package:go_router/go_router.dart'; 
 import 'package:google_fonts/google_fonts.dart'; 
-import '../../../core/theme/module_themes.dart'; 
- 
-const _routes = { 
-  'breathing':         '/breathing', 
-  'mindfulness':       '/mindfulness', 
-  'diary':             '/diary', 
-  'journal_gratitude': '/gratitude', 
-  'doodle_dreams':     '/doodle', 
-  'bubble_canvas':     '/bubble', 
-  'burst_it_out':      '/burst', 
-  'scribble_pad':      '/scribble', 
-  'chatbot_seviyan':   '/chat', 
-  'healing_garden':    '/healing-garden', 
-  'inner_compass':     '/inner-compass', 
-}; 
- 
-const _emojis = { 
-  'breathing':         '🌬', 
-  'mindfulness':       '🧘', 
-  'diary':             '📖', 
-  'journal_gratitude': '🌸', 
-  'doodle_dreams':     '🎨', 
-  'bubble_canvas':     '🫧', 
-  'burst_it_out':      '💥', 
-  'scribble_pad':      '✏', 
-  'chatbot_seviyan':   '💬', 
-  'healing_garden':    '🌿', 
-  'inner_compass':     '🧭', 
-}; 
+import '../../../core/theme/app_theme.dart'; 
  
 class RecommendationCard extends StatelessWidget { 
-  final Map<String, dynamic> rec; 
-  final int rank; 
-  final ModuleTheme theme; 
- 
-  const RecommendationCard({super.key, required this.rec, required this.rank, required 
-this.theme}); 
+  const RecommendationCard({super.key}); 
  
   @override 
   Widget build(BuildContext context) { 
-    final id    = rec['module_id'] as String? ?? ''; 
-    final name  = rec['name']       as String? ?? ''; 
-    final dur   = rec['duration_min'] as int? ?? 5; 
-    final tags  = List<String>.from(rec['tags'] ?? []); 
-    final route = _routes[id] ?? '/dashboard'; 
-    final emoji = _emojis[id] ?? '✨'; 
-    final isTop = rank == 0; 
- 
-    return GestureDetector( 
-      onTap: () => context.push(route), 
-      child: Container( 
-        padding: const EdgeInsets.all(14), 
-        decoration: BoxDecoration( 
-          color: theme.cardBg, 
-          borderRadius: BorderRadius.circular(14), 
-          border: Border.all( 
-            color: isTop ? theme.accentColor.withValues(alpha: 0.5) : theme.cardBorder, 
-            width: isTop ? 1.5 : 1, 
+    return Container( 
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20), 
+      decoration: BoxDecoration( 
+        color: ZenTokens.surface, 
+        borderRadius: BorderRadius.circular(ZenTokens.radius2xl), 
+        border: Border.all(color: ZenTokens.borderSoft.withValues(alpha: 0.55)), 
+        boxShadow: [ 
+          BoxShadow( 
+            color: const Color(0xFF1E295A).withValues(alpha: 0.12), 
+            blurRadius: 28, 
+            offset: const Offset(0, 8), 
+            spreadRadius: -18, 
+          ) 
+        ], 
+      ), 
+      child: Column( 
+        crossAxisAlignment: CrossAxisAlignment.start, 
+        children: [ 
+          Text( 
+            'For you right now'.toUpperCase(), 
+            style: GoogleFonts.inter( 
+              fontSize: 12, 
+              fontWeight: FontWeight.w600, 
+              letterSpacing: 1.2, 
+              color: ZenTokens.secondary, 
+            ), 
           ), 
-        ), 
-        child: Row(children: [ 
-          Text(emoji, style: const TextStyle(fontSize: 26)), 
-          const SizedBox(width: 12), 
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [ 
-            Row(children: [ 
+          const SizedBox(height: 16), 
+          _buildPrimaryCard(context), 
+        ], 
+      ), 
+    ); 
+  } 
+ 
+  Widget _buildPrimaryCard(BuildContext context) { 
+    return Container( 
+      padding: const EdgeInsets.all(16), 
+      decoration: BoxDecoration( 
+        color: ZenTokens.surfaceRaised, 
+        borderRadius: BorderRadius.circular(ZenTokens.radiusXl), 
+        border: Border.all(color: ZenTokens.primary.withValues(alpha: 0.2)), 
+        boxShadow: [ 
+          BoxShadow( 
+            color: ZenTokens.primary.withValues(alpha: 0.05), 
+            blurRadius: 8, 
+            offset: const Offset(0, 4), 
+          ) 
+        ], 
+      ), 
+      child: Column( 
+        crossAxisAlignment: CrossAxisAlignment.start, 
+        children: [ 
+          Row( 
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+            children: [ 
               Container( 
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2), 
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), 
                 decoration: BoxDecoration( 
-                  color: isTop ? theme.accentColor.withValues(alpha: 0.15) : theme.cardBg, 
-                  borderRadius: BorderRadius.circular(999), 
-                  border: isTop ? null : Border.all(color: theme.cardBorder), 
+                  color: ZenTokens.primary.withValues(alpha: 0.1), 
+                  borderRadius: BorderRadius.circular(ZenTokens.radiusFull), 
                 ), 
-                child: Text(isTop ? '✦ Top pick' : '#${rank + 1}', 
+                child: Text( 
+                  '✨ Top pick'.toUpperCase(), 
                   style: GoogleFonts.inter( 
-                    fontSize: 10, color: isTop ? theme.accentColor : theme.textSecondary, 
+                    fontSize: 11.2, 
                     fontWeight: FontWeight.w600, 
-                  )), 
+                    letterSpacing: 0.5, 
+                    color: ZenTokens.primary, 
+                  ), 
+                ), 
               ), 
-              const Spacer(), 
-              Text('$dur min', style: GoogleFonts.inter(fontSize: 11, color: theme.textSecondary)), 
-            ]), 
-            const SizedBox(height: 4), 
-            Text(name, style: GoogleFonts.inter( 
-              fontSize: 15, fontWeight: FontWeight.w600, color: theme.textPrimary, 
-            )), 
-            if (tags.isNotEmpty) 
-              Padding( 
-                padding: const EdgeInsets.only(top: 3), 
-                child: Text(tags.take(2).join(' · '), 
-                  style: GoogleFonts.inter(fontSize: 11, color: theme.textSecondary)), 
+              Text( 
+                '3 min', 
+                style: GoogleFonts.inter( 
+                  fontSize: 12, 
+                  color: ZenTokens.fgSubtle, 
+                ), 
               ), 
-          ])), 
-          const SizedBox(width: 8), 
-          Icon(Icons.arrow_forward_ios_rounded, size: 13, color: theme.textSecondary), 
-        ]), 
+            ], 
+          ), 
+          const SizedBox(height: 8), 
+          Text( 
+            'Box Breathing', 
+            style: GoogleFonts.inter( 
+              fontSize: 16, 
+              fontWeight: FontWeight.w600, 
+              color: ZenTokens.fg, 
+              height: 1.2, 
+            ), 
+          ), 
+          const SizedBox(height: 4), 
+          Text( 
+            'Clear your mind and find your center with this simple technique.', 
+            maxLines: 2, 
+            overflow: TextOverflow.ellipsis, 
+            style: GoogleFonts.inter( 
+              fontSize: 13, 
+              color: ZenTokens.fgMuted, 
+              height: 1.4, 
+            ), 
+          ), 
+          const SizedBox(height: 12), 
+          Row( 
+            children: [ 
+              _buildTag('Focus'), 
+              const SizedBox(width: 4), 
+              _buildTag('Calm'), 
+            ], 
+          ), 
+          const SizedBox(height: 12), 
+          GestureDetector( 
+            onTap: () => context.go('/breathing'), 
+            behavior: HitTestBehavior.opaque, 
+            child: Container( 
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8), 
+              decoration: BoxDecoration( 
+                color: ZenTokens.primary, 
+                borderRadius: BorderRadius.circular(ZenTokens.radiusXl), 
+              ), 
+              child: Row( 
+                mainAxisSize: MainAxisSize.min, 
+                children: [ 
+                  Text( 
+                    'Start', 
+                    style: GoogleFonts.inter( 
+                      fontSize: 13, 
+                      fontWeight: FontWeight.w500, 
+                      color: Colors.white, 
+                    ), 
+                  ), 
+                  const SizedBox(width: 6), 
+                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14), 
+                ], 
+              ), 
+            ), 
+          ), 
+        ], 
+      ), 
+    ); 
+  } 
+ 
+  Widget _buildTag(String text) { 
+    return Container( 
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), 
+      decoration: BoxDecoration( 
+        color: ZenTokens.surface, 
+        border: Border.all(color: ZenTokens.borderSoft.withValues(alpha: 0.4)), 
+        borderRadius: BorderRadius.circular(ZenTokens.radiusFull), 
+      ), 
+      child: Text( 
+        text, 
+        style: GoogleFonts.inter( 
+          fontSize: 11.2, 
+          color: ZenTokens.fgSubtle, 
+        ), 
       ), 
     ); 
   } 

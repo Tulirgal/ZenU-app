@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart'; 
 import '../../core/theme/app_theme.dart'; 
 import '../../shared/widgets/module_background.dart'; 
+import '../../core/api/api_client.dart'; 
 import 'package:intl/intl.dart'; 
  
 class JournalEntry { 
@@ -29,8 +30,9 @@ class DiaryScreen extends StatefulWidget {
 } 
  
 class _DiaryScreenState extends State<DiaryScreen> { 
-  final List<JournalEntry> _entries = []; 
+  List<JournalEntry> _entries = []; 
   bool _isWriting = false; 
+  bool _isLoading = true; 
    
   final TextEditingController _titleCtrl = TextEditingController(); 
   final TextEditingController _contentCtrl = TextEditingController(); 
@@ -41,6 +43,38 @@ class _DiaryScreenState extends State<DiaryScreen> {
     'Focused', 'Grateful', 'Happy', 'Overwhelmed', 'Sad', 
     'Stressed', 'Tired' 
   ]; 
+ 
+  @override 
+  void initState() { 
+    super.initState(); 
+    _loadEntries(); 
+  } 
+ 
+  Future<void> _loadEntries() async { 
+    try { 
+      final client = await ApiClient.getInstance(); 
+      final res = await client.get('/api/journal'); 
+      if (res.statusCode == 200) { 
+        final List data = res.data; 
+        if (mounted) { 
+          setState(() { 
+            _entries = data.map((e) => JournalEntry( 
+              id: e['id'].toString(), 
+              title: e['title'] ?? 'Untitled', 
+              mood: e['mood'], 
+              content: e['content'] ?? '', 
+              createdAt: DateTime.parse(e['created_at'] ?? DateTime.now().toIso8601String()), 
+            )).toList(); 
+            _isLoading = false; 
+          }); 
+        } 
+      } 
+    } catch (e) { 
+      if (mounted) { 
+        setState(() => _isLoading = false); 
+      } 
+    } 
+  } 
  
   void _startWriting() { 
     _titleCtrl.clear(); 
@@ -57,19 +91,37 @@ class _DiaryScreenState extends State<DiaryScreen> {
     }); 
   } 
  
-  void _saveEntry() { 
+  Future<void> _saveEntry() async { 
     if (_contentCtrl.text.trim().isEmpty) return; 
-    final entry = JournalEntry( 
-      id: DateTime.now().millisecondsSinceEpoch.toString(), 
-      title: _titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : 'Untitled', 
-      mood: _selectedMood, 
-      content: _contentCtrl.text.trim(), 
-      createdAt: DateTime.now(), 
-    ); 
-    setState(() { 
-      _entries.insert(0, entry); 
-      _isWriting = false; 
-    }); 
+     
+    final payload = { 
+      'title': _titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : 'Untitled', 
+      'mood': _selectedMood, 
+      'content': _contentCtrl.text.trim(), 
+    }; 
+     
+    try { 
+      final client = await ApiClient.getInstance(); 
+      final res = await client.post('/api/journal', data: payload); 
+      if (res.statusCode == 200 || res.statusCode == 201) { 
+        final e = res.data; 
+        final entry = JournalEntry( 
+          id: e['id'].toString(), 
+          title: e['title'] ?? 'Untitled', 
+          mood: e['mood'], 
+          content: e['content'] ?? '', 
+          createdAt: DateTime.parse(e['created_at'] ?? DateTime.now().toIso8601String()), 
+        ); 
+        if (mounted) { 
+          setState(() { 
+            _entries.insert(0, entry); 
+            _isWriting = false; 
+          }); 
+        } 
+      } 
+    } catch (e) { 
+      // Handle error 
+    } 
   } 
  
   @override 
@@ -146,19 +198,21 @@ class _DiaryScreenState extends State<DiaryScreen> {
           const SizedBox(height: 24), 
            
           Expanded( 
-            child: _entries.isEmpty 
-                ? Center( 
-                    child: Text( 
-                      'Nothing written yet. The right page is waiting for your first reflection.', 
-                      textAlign: TextAlign.center, 
-                      style: GoogleFonts.inter( 
-                        fontSize: 14, 
-                        color: Colors.black54, 
-                        height: 1.6, 
-                      ), 
-                    ), 
-                  ) 
-                : ListView.separated( 
+            child: _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : _entries.isEmpty 
+                    ? Center( 
+                        child: Text( 
+                          'Nothing written yet. The right page is waiting for your first reflection.', 
+                          textAlign: TextAlign.center, 
+                          style: GoogleFonts.inter( 
+                            fontSize: 14, 
+                            color: Colors.black54, 
+                            height: 1.6, 
+                          ), 
+                        ), 
+                      ) 
+                    : ListView.separated( 
                     itemCount: _entries.length, 
                     separatorBuilder: (context, index) => const SizedBox(height: 8), 
                     itemBuilder: (context, index) { 

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart'; 
 import 'package:go_router/go_router.dart'; 
 import 'package:google_fonts/google_fonts.dart'; 
+import '../../core/api/api_client.dart'; 
 
 import '../../core/theme/app_theme.dart'; 
 import '../../shared/widgets/module_background.dart'; 
@@ -66,6 +67,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }); 
   } 
  
+  String? _conversationId;
+
   void _sendMessage(String text) async { 
     if (text.trim().isEmpty || _isSending) return; 
      
@@ -76,13 +79,38 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _inputCtrl.clear(); 
     _scrollToBottom(); 
  
-    // Simulate network delay 
-    await Future.delayed(const Duration(milliseconds: 1500)); 
- 
-    setState(() { 
-      _messages.add(ChatMessage(id: DateTime.now().millisecondsSinceEpoch, role: 'assistant', content: 'This is a simulated response. The real backend integration will process: "$text"')); 
-      _isSending = false; 
-    }); 
+    try {
+      final client = await ApiClient.getInstance();
+      final res = await client.post('/api/chat/messages', data: {
+        'message': text.trim(),
+        if (_conversationId != null) 'conversationId': _conversationId,
+      });
+
+      if (res.statusCode == 200 && res.data != null) {
+        final reply = res.data['reply'] as String;
+        _conversationId = res.data['conversationId'] as String?;
+        if (mounted) {
+          setState(() { 
+            _messages.add(ChatMessage(id: DateTime.now().millisecondsSinceEpoch, role: 'assistant', content: reply)); 
+            _isSending = false; 
+          }); 
+        }
+      } else {
+        if (mounted) {
+          setState(() { 
+            _messages.add(ChatMessage(id: DateTime.now().millisecondsSinceEpoch, role: 'assistant', content: 'Sorry, I ran into an error connecting to the server.')); 
+            _isSending = false; 
+          }); 
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() { 
+          _messages.add(ChatMessage(id: DateTime.now().millisecondsSinceEpoch, role: 'assistant', content: 'Network error. Please try again later.')); 
+          _isSending = false; 
+        }); 
+      }
+    }
     _scrollToBottom(); 
   } 
  

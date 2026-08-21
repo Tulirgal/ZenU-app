@@ -1,8 +1,8 @@
-import 'dart:convert'; 
+
 import 'package:flutter/material.dart'; 
 import 'package:go_router/go_router.dart'; 
 import 'package:google_fonts/google_fonts.dart'; 
-import 'package:http/http.dart' as http; 
+import '../../core/api/api_client.dart'; 
 import 'package:audioplayers/audioplayers.dart'; 
 import '../../core/theme/app_theme.dart'; 
 import '../../shared/widgets/module_background.dart'; 
@@ -107,9 +107,10 @@ class _MindfulnessScreenState extends State<MindfulnessScreen> with SingleTicker
  
   Future<void> _loadMeditation() async { 
     try { 
-      final res = await http.get(Uri.parse('http://localhost:3000/api/meditations')); 
+      final client = await ApiClient.getInstance(); 
+      final res = await client.get('/api/meditations'); 
       if (res.statusCode == 200) { 
-        final List data = jsonDecode(res.body); 
+        final List data = res.data; 
         if (data.isNotEmpty) { 
           _session = data[0]; 
         } 

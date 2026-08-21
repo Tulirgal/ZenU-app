@@ -3,9 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart'; 
 import 'core/auth/auth_service.dart'; 
 import 'shared/widgets/splash_screen.dart'; 
-import 'shared/widgets/sign_in_screen.dart'; 
-import 'shared/widgets/sign_up_screen.dart'; 
 import 'shared/widgets/zen_nav_shell.dart'; 
+import 'features/auth/sign_in_screen.dart';
+import 'features/auth/sign_up_screen.dart';
+import 'features/home/home_screen.dart';
 import 'features/dashboard/dashboard_screen.dart'; 
 import 'features/breathing/breathing_screen.dart'; 
 import 'features/mindfulness/mindfulness_screen.dart'; 
@@ -30,13 +31,24 @@ class AppRouter {
       final isAuth = auth.isAuthenticated; 
  
       if (!auth.initialized) return '/splash'; 
-      if (loc == '/splash') return isAuth ? '/dashboard' : '/signin'; 
-      if (!isAuth && loc != '/signin' && loc != '/signup') return '/signin'; 
-      if (isAuth && (loc == '/signin' || loc == '/signup')) return '/dashboard'; 
+      if (loc == '/splash') return isAuth ? '/dashboard' : '/';
+      
+      // If going to an auth route while authenticated, redirect to dashboard
+      if (isAuth && (loc == '/signin' || loc == '/signup' || loc == '/')) {
+        return '/dashboard';
+      }
+
+      // If going to a protected route while unauthenticated, redirect to signin
+      final isProtectedRoute = loc != '/' && loc != '/signin' && loc != '/signup' && loc != '/splash';
+      if (!isAuth && isProtectedRoute) {
+        return '/signin';
+      }
+
       return null; 
     }, 
     routes: [ 
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()), 
+      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/signin', builder: (context, state) => const SignInScreen()), 
       GoRoute(path: '/signup', builder: (context, state) => const SignUpScreen()), 
       ShellRoute( 

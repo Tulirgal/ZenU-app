@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart'; 
 
  
+import '../../core/api/api_client.dart';
+
 class Task { 
   final String id; 
   final String name; 
@@ -20,9 +22,10 @@ class HealingGardenScreen extends StatefulWidget {
 } 
  
 class _HealingGardenScreenState extends State<HealingGardenScreen> with TickerProviderStateMixin { 
-  final List<Task> _tasks = []; 
+  List<Task> _tasks = []; 
   final TextEditingController _inputCtrl = TextEditingController(); 
   bool _adding = false; 
+  bool _loading = true;
   String? _newTreeId; 
  
   late AnimationController _fireflyCtrl; 
@@ -35,13 +38,30 @@ class _HealingGardenScreenState extends State<HealingGardenScreen> with TickerPr
       duration: const Duration(seconds: 4), 
     )..repeat(); 
  
-    // Add some sample data for visual parity since we don't have a real backend 
-    _tasks.addAll([ 
-      Task(id: 'task-1', name: 'Submit assignment', completed: true), 
-      Task(id: 'task-2', name: 'Read a book', completed: false), 
-      Task(id: 'task-3', name: 'Drink water', completed: true), 
-    ]); 
+    _loadTasks();
   } 
+
+  Future<void> _loadTasks() async {
+    try {
+      final client = await ApiClient.getInstance();
+      final res = await client.get('/api/healing-garden/tasks');
+      if (res.statusCode == 200) {
+        final List data = res.data['tasks'] ?? [];
+        if (mounted) {
+          setState(() {
+            _tasks = data.map((t) => Task(
+              id: t['id'].toString(),
+              name: t['name'] ?? '',
+              completed: t['completed'] == true,
+            )).toList();
+            _loading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
  
   @override 
   void dispose() { 
@@ -50,21 +70,30 @@ class _HealingGardenScreenState extends State<HealingGardenScreen> with TickerPr
     super.dispose(); 
   } 
  
-  void _handleAdd(String val) { 
+  void _handleAdd(String val) async { 
     if (val.trim().isEmpty || _adding) return; 
-    setState(() { 
-      _adding = true;
-      _tasks.add(Task( 
-        id: DateTime.now().millisecondsSinceEpoch.toString(), 
-        name: val.trim(), 
-        completed: false, 
-      )); 
-      _adding = false;
-    }); 
-    _inputCtrl.clear(); 
+    setState(() => _adding = true);
+
+    try {
+      final client = await ApiClient.getInstance();
+      final res = await client.post('/api/healing-garden/tasks', data: {'name': val.trim()});
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final t = res.data['task'];
+        if (mounted && t != null) {
+          setState(() {
+            _tasks.add(Task(id: t['id'].toString(), name: t['name'], completed: t['completed'] == true));
+          });
+          _inputCtrl.clear();
+        }
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
   } 
  
-  void _handleComplete(String id) { 
+  void _handleComplete(String id) async { 
     setState(() { 
       final index = _tasks.indexWhere((t) => t.id == id); 
       if (index != -1) { 
@@ -81,13 +110,34 @@ class _HealingGardenScreenState extends State<HealingGardenScreen> with TickerPr
         setState(() => _newTreeId = null); 
       } 
     }); 
+
+    try {
+      final client = await ApiClient.getInstance();
+      await client.patch('/api/healing-garden/tasks/$id/complete');
+    } catch (e) {
+      // Revert on fail
+      if (mounted) {
+        setState(() {
+          final index = _tasks.indexWhere((t) => t.id == id);
+          if (index != -1) {
+            _tasks[index] = Task(id: _tasks[index].id, name: _tasks[index].name, completed: false);
+          }
+        });
+      }
+    }
   } 
  
-  void _handleDelete(String id) { 
+  void _handleDelete(String id) async { 
     setState(() { 
       _tasks.removeWhere((t) => t.id == id); 
     }); 
-  } 
+    try {
+      final client = await ApiClient.getInstance();
+      await client.delete('/api/healing-garden/tasks/$id');
+    } catch (e) {
+      _loadTasks(); // Reload on fail
+    }
+  }  
  
   @override 
   Widget build(BuildContext context) { 
@@ -220,9 +270,11 @@ class _HealingGardenScreenState extends State<HealingGardenScreen> with TickerPr
                       ) 
                     ], 
                   ), 
-                  child: ClipRRect( 
-                    borderRadius: BorderRadius.circular(16), 
-                    child: Stack( 
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _loading
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFede4d3)))
+                      : Stack( 
                       children: [ 
                         Positioned.fill( 
                           child: SingleChildScrollView( 

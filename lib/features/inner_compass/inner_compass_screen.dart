@@ -1,277 +1,618 @@
+import 'dart:math' as math; 
 import 'package:flutter/material.dart'; 
 import 'package:go_router/go_router.dart'; 
 import 'package:google_fonts/google_fonts.dart'; 
-import 'package:flutter_animate/flutter_animate.dart'; 
-import '../../core/api/api_client.dart'; 
-import '../../core/theme/module_themes.dart'; 
+import '../../core/theme/app_theme.dart'; 
 import '../../shared/widgets/module_background.dart'; 
+import 'inner_compass_data.dart'; 
  
-enum CompassStep { core, sub, result } 
+enum CompassState { primary, secondary, tertiary, complete } 
+ 
+final Map<String, Color> primaryColors = { 
+  "happy": HSLColor.fromAHSL(1.0, 42, 0.92, 0.55).toColor(), 
+  "sad": HSLColor.fromAHSL(1.0, 210, 0.70, 0.58).toColor(), 
+  "angry": HSLColor.fromAHSL(1.0, 8, 0.78, 0.56).toColor(), 
+  "fearful": HSLColor.fromAHSL(1.0, 275, 0.45, 0.55).toColor(), 
+  "disgusted": HSLColor.fromAHSL(1.0, 142, 0.40, 0.42).toColor(), 
+  "surprised": HSLColor.fromAHSL(1.0, 24, 0.90, 0.58).toColor(), 
+  "bad": HSLColor.fromAHSL(1.0, 172, 0.48, 0.42).toColor(), 
+}; 
+ 
+final Map<String, String> primaryLabels = { 
+  "happy": "Joy", 
+  "sad": "Sadness", 
+  "angry": "Anger", 
+  "fearful": "Fear", 
+  "disgusted": "Disgust", 
+  "surprised": "Surprise", 
+  "bad": "Low", 
+}; 
+ 
+final List<String> primaryOrder = [ 
+  "happy", 
+  "sad", 
+  "angry", 
+  "fearful", 
+  "disgusted", 
+  "surprised", 
+  "bad" 
+]; 
  
 class InnerCompassScreen extends StatefulWidget { 
   const InnerCompassScreen({super.key}); 
+ 
   @override 
   State<InnerCompassScreen> createState() => _InnerCompassScreenState(); 
 } 
  
 class _InnerCompassScreenState extends State<InnerCompassScreen> { 
-  CompassStep _step = CompassStep.core; 
-  String? _selectedCore; 
-  String? _selectedSub; 
+  CompassState _viewState = CompassState.primary; 
+  String? _selectedPrimary; 
+  String? _selectedSecondary; 
+  String? _selectedTertiary; 
  
-  static const coreEmotions = [ 
-    {'id': 'angry',     'label': 'Angry',     'emoji': '😡', 'color': Color(0xFFEF4444)}, 
-    {'id': 'sad',       'label': 'Sad',       'emoji': '😢', 'color': Color(0xFF3B82F6)}, 
-    {'id': 'happy',     'label': 'Happy',     'emoji': '✨', 'color': Color(0xFFEAB308)}, 
-    {'id': 'fearful',   'label': 'Fearful',   'emoji': '😨', 'color': Color(0xFF8B5CF6)}, 
-    {'id': 'surprised', 'label': 'Surprised', 'emoji': '⚡', 'color': Color(0xFFF97316)}, 
-    {'id': 'disgusted', 'label': 'Disgusted', 'emoji': '🤢', 'color': Color(0xFF22C55E)}, 
-    {'id': 'bad',       'label': 'Bad',       'emoji': '😩', 'color': Color(0xFF64748B)}, 
-  ]; 
- 
-  static const subEmotions = { 
-    'angry':     ['Frustrated', 'Resentful', 'Furious', 'Overwhelmed'], 
-    'sad':       ['Lonely', 'Heartbroken', 'Hopeless', 'Grieving'], 
-    'happy':     ['Grateful', 'Excited', 'Proud', 'Peaceful'], 
-    'fearful':   ['Anxious', 'Insecure', 'Scared', 'Worried'], 
-    'surprised': ['Shocked', 'Confused', 'Amazed', 'Eager'], 
-    'disgusted': ['Disappointed', 'Awful', 'Repulsed', 'Horrified'], 
-    'bad':       ['Tired', 'Stressed', 'Bored', 'Numb'], 
-  }; 
- 
-  static const affirmations = { 
-    'Frustrated': 'It is completely valid to feel blocked right now. Take a step back and let the frustration settle before moving forward.', 
-    'Resentful': 'Holding onto bitterness is heavy. It is okay to acknowledge it, but you don\'t have to carry it forever.', 
-    'Furious': 'Your anger is a protective signal, and it is valid. Honor it, but let it pass through you instead of consuming you.', 
-    'Overwhelmed': 'When everything feels like too much, focus on just the very next step. You don\'t have to figure it all out right now.', 
-    'Lonely': 'You are worthy of connection, even when it feels out of reach. Remember that this feeling of isolation is temporary.', 
-    'Heartbroken': 'Pain is the echo of how deeply you care. Give yourself the grace and time you need to heal.', 
-    'Hopeless': 'Even in the darkest moments, the sun eventually rises. Let yourself rest, and hope will find its way back.', 
-    'Grieving': 'Grief has no timeline. Honor your loss and be gentle with yourself as you navigate these waves.', 
-    'Grateful': 'Appreciation anchors you in the present. Savor this goodness and let it warm your spirit.', 
-    'Excited': 'Your energy is radiant and infectious! Embrace the joy of anticipation and let it move you forward.', 
-    'Proud': 'You worked hard for this, and you deserve to celebrate. Let yourself feel the fullness of your accomplishments.', 
-    'Peaceful': 'There is profound power in stillness. Absorb this calm and let it recharge your entire being.', 
-    'Anxious': 'Your mind is racing to protect you, but you are safe right now. Ground yourself in the present moment.', 
-    'Insecure': 'Your doubts do not define your worth. You are enough exactly as you are, flaws and all.', 
-    'Scared': 'Fear means you are at the edge of your comfort zone. Acknowledge the fear, and bravely take the next step.', 
-    'Worried': 'You cannot control the future, only how you respond to it. Bring your focus back to what you can influence today.', 
-    'Shocked': 'Unexpected things disrupt our balance. Give yourself a moment to steady your footing before reacting.', 
-    'Confused': 'Clarity often takes time to emerge from the fog. It is okay to not have the answers right now.', 
-    'Amazed': 'Wonder is a beautiful state of mind. Let the awe wash over you and inspire your perspective.', 
-    'Eager': 'Your readiness is a powerful force. Channel that momentum purposefully toward your goals.', 
-    'Disappointed': 'It is hard when things don\'t meet our hopes. Allow yourself to feel the letdown before adjusting your sails.', 
-    'Awful': 'Some days are just profoundly difficult. Be kind to yourself today, and remember tomorrow is a blank page.', 
-    'Repulsed': 'Your boundaries are speaking to you. Listen to them and protect your peace.', 
-    'Horrified': 'Shocking moments take time to process. Ensure you are in a safe space and breathe through the intensity.', 
-    'Tired': 'Rest is not a reward, it is a requirement. Give your body and mind the deep rest they are asking for.', 
-    'Stressed': 'The pressure is high, but you have handled difficult things before. Take it one task, one breath at a time.', 
-    'Bored': 'Boredom is often the predecessor to creativity. See it as a pause rather than a deficit.', 
-    'Numb': 'Feeling disconnected is a defense mechanism. Gently invite small sensations back when you feel safe enough.', 
-  }; 
- 
-  static const recs = { 
-    'angry':     [{'route': '/burst', 'label': 'Burst It Out'}, {'route': '/breathing', 'label': 'Breathing'}], 
-    'sad':       [{'route': '/chat', 'label': 'Talk to Seviyan'}, {'route': '/doodle', 'label': 'Doodle Dreams'}], 
-    'happy':     [{'route': '/gratitude', 'label': 'Gratitude Journal'}, {'route': '/healing-garden', 'label': 'Healing Garden'}], 
-    'fearful':   [{'route': '/breathing', 'label': 'Zen Breath Zone'}, {'route': '/mindfulness', 'label': 'Meditate'}], 
-    'surprised': [{'route': '/diary', 'label': 'My Diary'}, {'route': '/bubble', 'label': 'Bubble Canvas'}], 
-    'disgusted': [{'route': '/scribble', 'label': 'Scribble Pad'}, {'route': '/burst', 'label': 'Burst It Out'}], 
-    'bad':       [{'route': '/bubble', 'label': 'Bubble Canvas'}, {'route': '/healing-garden', 'label': 'Healing Garden'}], 
-  }; 
- 
-  void _selectCore(String id) { 
+  void _handlePrimary(String primary) { 
     setState(() { 
-      _selectedCore = id; 
-      _step = CompassStep.sub; 
+      _selectedPrimary = primary; 
+      _selectedSecondary = null; 
+      _selectedTertiary = null; 
+      _viewState = CompassState.secondary; 
     }); 
   } 
  
-  Future<void> _selectSub(String sub) async { 
+  void _handleSecondary(String secondary) { 
     setState(() { 
-      _selectedSub = sub; 
-      _step = CompassStep.result; 
+      _selectedSecondary = secondary; 
+      _selectedTertiary = null; 
+      _viewState = CompassState.tertiary; 
     }); 
-     
-    try { 
-      final c = await ApiClient.getInstance(); 
-      await c.post('/api/signals/engagement', data: {'module_id': 'inner_compass', 'event_type': 'completed'}); 
-    } catch (_) {} 
   } 
  
-  void _reset() { 
+  void _handleTertiary(String tertiary) { 
     setState(() { 
-      _step = CompassStep.core; 
-      _selectedCore = null; 
-      _selectedSub = null; 
+      _selectedTertiary = tertiary; 
+      _viewState = CompassState.complete; 
+    }); 
+  } 
+ 
+  void _handleBack() { 
+    setState(() { 
+      if (_viewState == CompassState.complete) { 
+        _viewState = CompassState.tertiary; 
+      } else if (_viewState == CompassState.tertiary) { 
+        _selectedTertiary = null; 
+        _viewState = CompassState.secondary; 
+      } else if (_viewState == CompassState.secondary) { 
+        _selectedSecondary = null; 
+        _selectedPrimary = null; 
+        _viewState = CompassState.primary; 
+      } 
+    }); 
+  } 
+ 
+  void _handleReset() { 
+    setState(() { 
+      _viewState = CompassState.primary; 
+      _selectedPrimary = null; 
+      _selectedSecondary = null; 
+      _selectedTertiary = null; 
     }); 
   } 
  
   @override 
   Widget build(BuildContext context) { 
-    final theme = ModuleThemes.innerCompass; 
+    final accentColor = _selectedPrimary != null 
+        ? primaryColors[_selectedPrimary!]! 
+        : ZenTokens.fg; 
+ 
     return Scaffold( 
-      extendBodyBehindAppBar: true, 
-      appBar: AppBar( 
-        backgroundColor: Colors.transparent, 
-        elevation: 0, 
-        iconTheme: IconThemeData(color: theme.textPrimary), 
-        title: Text('Inner Compass', style: GoogleFonts.inter(color: theme.textPrimary, fontWeight: FontWeight.w600)), 
-      ), 
       body: ModuleBackground( 
-        moduleKey: 'inner_compass', 
+        moduleKey: 'inner_compass', // Assume there's a theme for it 
         child: SafeArea( 
-          child: AnimatedSwitcher( 
-            duration: const Duration(milliseconds: 400), 
-            child: _buildStep(theme), 
+          child: Column( 
+            crossAxisAlignment: CrossAxisAlignment.stretch, 
+            children: [ 
+              // Back Button 
+              Align( 
+                alignment: Alignment.centerLeft, 
+                child: Padding( 
+                  padding: const EdgeInsets.only(left: 16, top: 12), 
+                  child: IconButton( 
+                    onPressed: () { 
+                      if (_viewState == CompassState.primary) { 
+                        context.pop(); 
+                      } else { 
+                        _handleBack(); 
+                      } 
+                    }, 
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white), 
+                  ), 
+                ), 
+              ), 
+ 
+              // Header section 
+              if (_viewState != CompassState.complete) 
+                Padding( 
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), 
+                  child: Column( 
+                    crossAxisAlignment: CrossAxisAlignment.start, 
+                    children: [ 
+                      Text( 
+                        'Inner Compass', 
+                        style: GoogleFonts.inter( 
+                          fontSize: 14, 
+                          fontWeight: FontWeight.w500, 
+                          color: accentColor, 
+                        ), 
+                      ), 
+                      const SizedBox(height: 6), 
+                      Text( 
+                        _viewState == CompassState.primary 
+                            ? 'What are you feeling?' 
+                            : _viewState == CompassState.secondary 
+                                ? 'Let\'s get closer.' 
+                                : 'Almost there.', 
+                        style: GoogleFonts.lora( 
+                          fontSize: 36, 
+                          fontWeight: FontWeight.w600, 
+                          color: Colors.white, 
+                          letterSpacing: -0.5, 
+                        ), 
+                      ), 
+                      const SizedBox(height: 12), 
+                      Text( 
+                        _viewState == CompassState.primary 
+                            ? 'Choose the emotional family that feels most true. You can refine it in the next step.' 
+                            : 'Select the word that best describes your experience right now.', 
+                        style: GoogleFonts.inter( 
+                          fontSize: 15, 
+                          color: Colors.white.withValues(alpha: 0.7), 
+                          height: 1.5, 
+                        ), 
+                      ), 
+                    ], 
+                  ), 
+                ), 
+ 
+              Expanded( 
+                child: AnimatedSwitcher( 
+                  duration: const Duration(milliseconds: 320), 
+                  switchInCurve: Curves.easeOut, 
+                  switchOutCurve: Curves.easeIn, 
+                  transitionBuilder: (child, animation) { 
+                    return FadeTransition( 
+                      opacity: animation, 
+                      child: SlideTransition( 
+                        position: Tween<Offset>( 
+                          begin: const Offset(0.0, 0.05), 
+                          end: Offset.zero, 
+                        ).animate(animation), 
+                        child: child, 
+                      ), 
+                    ); 
+                  }, 
+                  child: _buildCurrentView(), 
+                ), 
+              ), 
+            ], 
           ), 
         ), 
       ), 
     ); 
   } 
  
-  Widget _buildStep(ModuleTheme theme) { 
-    switch (_step) { 
-      case CompassStep.core: return _buildCore(theme); 
-      case CompassStep.sub:  return _buildSub(theme); 
-      case CompassStep.result: return _buildResult(theme); 
+  Widget _buildCurrentView() { 
+    switch (_viewState) { 
+      case CompassState.primary: 
+        return _buildPrimaryView(); 
+      case CompassState.secondary: 
+        return _buildOptionsList( 
+          key: const ValueKey('secondary'), 
+          options: emotions[_selectedPrimary!]!.keys.toList(), 
+          selected: _selectedSecondary, 
+          onSelect: _handleSecondary, 
+        ); 
+      case CompassState.tertiary: 
+        return _buildOptionsList( 
+          key: const ValueKey('tertiary'), 
+          options: emotions[_selectedPrimary!]![_selectedSecondary!]!, 
+          selected: _selectedTertiary, 
+          onSelect: _handleTertiary, 
+        ); 
+      case CompassState.complete: 
+        return _buildCompleteView(); 
     } 
   } 
  
-  Widget _buildCore(ModuleTheme theme) { 
-    return SingleChildScrollView( 
-      padding: const EdgeInsets.all(24), 
-      child: Column( 
-        key: const ValueKey('core'), 
-        children: [ 
-          const SizedBox(height: 20), 
-          Text('How are you feeling at your core?', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 22, color: theme.textPrimary, fontWeight: FontWeight.w600)), 
-          const SizedBox(height: 40), 
-          Wrap( 
-            spacing: 20, runSpacing: 20, 
-            alignment: WrapAlignment.center, 
-            children: coreEmotions.map((e) => GestureDetector( 
-              onTap: () => _selectCore(e['id'] as String), 
+  Widget _buildPrimaryView() { 
+    return Center( 
+      key: const ValueKey('primary'), 
+      child: GestureDetector( 
+        child: SizedBox( 
+          width: 320, 
+          height: 320, 
+          child: _CompassWheelWidget( 
+            onSelect: _handlePrimary, 
+          ), 
+        ), 
+      ), 
+    ); 
+  } 
+ 
+  Widget _buildOptionsList({ 
+    required Key key, 
+    required List<String> options, 
+    required String? selected, 
+    required ValueChanged<String> onSelect, 
+  }) { 
+    final accent = primaryColors[_selectedPrimary!]!; 
+    final softAccent = accent.withValues(alpha: 0.15); 
+ 
+    return ListView( 
+      key: key, 
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), 
+      children: [ 
+        Padding( 
+          padding: const EdgeInsets.only(bottom: 16), 
+          child: Text( 
+            _viewState == CompassState.secondary 
+                ? primaryLabels[_selectedPrimary!]! 
+                : '${primaryLabels[_selectedPrimary!]!} → ${_selectedSecondary!}', 
+            style: GoogleFonts.inter( 
+              fontSize: 14, 
+              fontWeight: FontWeight.w600, 
+              color: accent, 
+            ), 
+          ), 
+        ), 
+        Wrap( 
+          spacing: 12, 
+          runSpacing: 12, 
+          children: options.map((opt) { 
+            final isSelected = opt == selected; 
+            return InkWell( 
+              onTap: () => onSelect(opt), 
+              borderRadius: BorderRadius.circular(20), 
               child: Container( 
-                width: 120, height: 120, 
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), 
                 decoration: BoxDecoration( 
-                  shape: BoxShape.circle, 
-                  gradient: LinearGradient( 
-                    begin: Alignment.topLeft, end: Alignment.bottomRight, 
-                    colors: [(e['color'] as Color).withValues(alpha: 0.8), (e['color'] as Color).withValues(alpha: 0.2)], 
+                  color: isSelected ? softAccent : ZenTokens.surface, 
+                  borderRadius: BorderRadius.circular(20), 
+                  border: Border.all( 
+                    color: isSelected ? accent.withValues(alpha: 0.55) : ZenTokens.border, 
+                    width: isSelected ? 2 : 1, 
                   ), 
-                  border: Border.all(color: (e['color'] as Color).withValues(alpha: 0.5)), 
+                  boxShadow: isSelected 
+                      ? [ 
+                          BoxShadow( 
+                            color: accent.withValues(alpha: 0.2), 
+                            blurRadius: 12, 
+                            offset: const Offset(0, 4), 
+                          ) 
+                        ] 
+                      : null, 
                 ), 
-                child: Column( 
-                  mainAxisAlignment: MainAxisAlignment.center, 
-                  children: [ 
-                    Text(e['emoji'] as String, style: const TextStyle(fontSize: 32)), 
-                    const SizedBox(height: 8), 
-                    Text(e['label'] as String, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)), 
-                  ], 
+                child: Text( 
+                  opt, 
+                  style: GoogleFonts.inter( 
+                    fontSize: 15, 
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400, 
+                    color: isSelected ? accent : ZenTokens.fg, 
+                  ), 
                 ), 
-              ).animate().fadeIn().scaleXY(begin: 0.8, end: 1.0, duration: 300.ms), 
-            )).toList(), 
-          ), 
-        ], 
-      ), 
-    ); 
-  } 
- 
-  Widget _buildSub(ModuleTheme theme) { 
-    final subs = subEmotions[_selectedCore] ?? []; 
-    return SingleChildScrollView( 
-      padding: const EdgeInsets.all(24), 
-      child: Column( 
-        key: const ValueKey('sub'), 
-        crossAxisAlignment: CrossAxisAlignment.stretch, 
-        children: [ 
-          const SizedBox(height: 20), 
-          Text('Let\'s go a little deeper.', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 22, color: theme.textPrimary, fontWeight: FontWeight.w600)), 
-          const SizedBox(height: 8), 
-          Text('Which word best describes this?', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 16, color: theme.textSecondary)), 
-          const SizedBox(height: 40), 
-          ...subs.map((s) => Padding( 
-            padding: const EdgeInsets.only(bottom: 12), 
-            child: ElevatedButton( 
-              onPressed: () => _selectSub(s), 
-              style: ElevatedButton.styleFrom( 
-                backgroundColor: theme.cardBg, 
-                foregroundColor: theme.textPrimary, 
-                padding: const EdgeInsets.symmetric(vertical: 20), 
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: theme.cardBorder)), 
               ), 
-              child: Text(s, style: GoogleFonts.inter(fontSize: 18)), 
-            ).animate().fadeIn().slideX(begin: 0.2, end: 0, duration: 300.ms), 
-          )), 
-          const SizedBox(height: 20), 
-          TextButton( 
-            onPressed: () => setState(() => _step = CompassStep.core), 
-            child: Text('Go back', style: GoogleFonts.inter(color: theme.textSecondary)), 
-          ), 
-        ], 
-      ), 
+            ); 
+          }).toList(), 
+        ), 
+      ], 
     ); 
   } 
  
-  Widget _buildResult(ModuleTheme theme) { 
-    final coreLabel = coreEmotions.firstWhere((e) => e['id'] == _selectedCore)['label']; 
-    final affirm = affirmations[_selectedSub] ?? 'Your feelings are valid.'; 
-    final r = recs[_selectedCore] ?? []; 
+  Widget _buildCompleteView() { 
+    final data = tertiaryData[_selectedTertiary!]; 
+    if (data == null) return const SizedBox(); 
+    final accent = primaryColors[_selectedPrimary!]!; 
  
     return SingleChildScrollView( 
-      padding: const EdgeInsets.all(24), 
+      key: const ValueKey('complete'), 
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24), 
       child: Column( 
-        key: const ValueKey('result'), 
         crossAxisAlignment: CrossAxisAlignment.stretch, 
         children: [ 
-          const SizedBox(height: 20), 
+          // Path badge 
+          Align( 
+            alignment: Alignment.centerLeft, 
+            child: Container( 
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
+              decoration: BoxDecoration( 
+                color: accent.withValues(alpha: 0.15), 
+                borderRadius: BorderRadius.circular(16), 
+              ), 
+              child: Text( 
+                '${primaryLabels[_selectedPrimary!]!} / ${_selectedSecondary!}', 
+                style: GoogleFonts.inter( 
+                  fontSize: 12, 
+                  fontWeight: FontWeight.w600, 
+                  color: accent, 
+                ), 
+              ), 
+            ), 
+          ), 
+          const SizedBox(height: 16), 
+           
+          // Tertiary Name 
+          Text( 
+            _selectedTertiary!, 
+            style: GoogleFonts.lora( 
+              fontSize: 40, 
+              fontWeight: FontWeight.w500, 
+              color: Colors.white, 
+              letterSpacing: -0.5, 
+            ), 
+          ), 
+          const SizedBox(height: 24), 
+ 
+          // Affirmation Card 
           Container( 
             padding: const EdgeInsets.all(24), 
             decoration: BoxDecoration( 
-              color: theme.cardBg, 
+              color: ZenTokens.surface, 
               borderRadius: BorderRadius.circular(24), 
-              border: Border.all(color: theme.accentColor.withValues(alpha: 0.5)), 
+              border: Border.all(color: ZenTokens.border), 
             ), 
             child: Column( 
+              crossAxisAlignment: CrossAxisAlignment.start, 
               children: [ 
-                Text('$coreLabel → $_selectedSub', style: GoogleFonts.inter(color: theme.accentColor, fontWeight: FontWeight.w600, letterSpacing: 1)), 
+                Text( 
+                  data.affirmation, 
+                  style: GoogleFonts.inter( 
+                    fontSize: 16, 
+                    height: 1.6, 
+                    color: ZenTokens.fg, 
+                  ), 
+                ), 
                 const SizedBox(height: 20), 
-                Text(affirm, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 20, color: theme.textPrimary, height: 1.5)), 
+                Container( 
+                  padding: const EdgeInsets.all(16), 
+                  decoration: BoxDecoration( 
+                    color: accent.withValues(alpha: 0.1), 
+                    borderRadius: BorderRadius.circular(16), 
+                  ), 
+                  child: Row( 
+                    crossAxisAlignment: CrossAxisAlignment.start, 
+                    children: [ 
+                      Icon(Icons.lightbulb_outline, color: accent, size: 20), 
+                      const SizedBox(width: 12), 
+                      Expanded( 
+                        child: Text( 
+                          data.tip, 
+                          style: GoogleFonts.inter( 
+                            fontSize: 14, 
+                            fontStyle: FontStyle.italic, 
+                            color: Colors.white.withValues(alpha: 0.9), 
+                            height: 1.5, 
+                          ), 
+                        ), 
+                      ), 
+                    ], 
+                  ), 
+                ), 
               ], 
             ), 
-          ).animate().fadeIn().slideY(begin: 0.2, end: 0, duration: 400.ms), 
-           
-          const SizedBox(height: 40), 
-          Text('Recommended for you now', style: GoogleFonts.inter(color: theme.textSecondary, fontWeight: FontWeight.w600)), 
-          const SizedBox(height: 16), 
-          ...r.map((rec) => Padding( 
-            padding: const EdgeInsets.only(bottom: 12), 
-            child: OutlinedButton( 
-              onPressed: () => context.push(rec['route'] as String), 
-              style: OutlinedButton.styleFrom( 
-                foregroundColor: theme.textPrimary, 
-                side: BorderSide(color: theme.cardBorder), 
-                padding: const EdgeInsets.symmetric(vertical: 20), 
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), 
-              ), 
-              child: Row( 
-                mainAxisAlignment: MainAxisAlignment.center, 
-                children: [ 
-                  Text(rec['label'] as String, style: GoogleFonts.inter(fontSize: 16)), 
-                  const SizedBox(width: 8), 
-                  Icon(Icons.arrow_forward_rounded, size: 16, color: theme.textSecondary), 
-                ], 
-              ), 
-            ).animate().fadeIn(delay: 200.ms), 
-          )), 
-          const SizedBox(height: 24), 
-          TextButton( 
-            onPressed: _reset, 
-            child: Text('Check in again', style: GoogleFonts.inter(color: theme.accentColor)), 
           ), 
+          const SizedBox(height: 32), 
+ 
+          // Modules 
+          Text( 
+            'Suggested for this moment', 
+            style: GoogleFonts.inter( 
+              fontSize: 14, 
+              fontWeight: FontWeight.w600, 
+              color: Colors.white.withValues(alpha: 0.6), 
+            ), 
+          ), 
+          const SizedBox(height: 16), 
+          ...data.modules.map((mod) { 
+            return Padding( 
+              padding: const EdgeInsets.only(bottom: 12), 
+              child: InkWell( 
+                onTap: () { 
+                  context.push(mod.route); 
+                }, 
+                borderRadius: BorderRadius.circular(20), 
+                child: Container( 
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), 
+                  decoration: BoxDecoration( 
+                    color: ZenTokens.surface, 
+                    borderRadius: BorderRadius.circular(20), 
+                    border: Border.all(color: ZenTokens.border), 
+                  ), 
+                  child: Row( 
+                    children: [ 
+                      Text(mod.emoji, style: const TextStyle(fontSize: 24)), 
+                      const SizedBox(width: 16), 
+                      Expanded( 
+                        child: Text( 
+                          mod.name, 
+                          style: GoogleFonts.inter( 
+                            fontSize: 16, 
+                            fontWeight: FontWeight.w600, 
+                            color: ZenTokens.fg, 
+                          ), 
+                        ), 
+                      ), 
+                      Icon( 
+                        Icons.arrow_forward_rounded, 
+                        color: accent, 
+                        size: 20, 
+                      ), 
+                    ], 
+                  ), 
+                ), 
+              ), 
+            ); 
+          }), 
+ 
+          const SizedBox(height: 32), 
+          Center( 
+            child: TextButton( 
+              onPressed: _handleReset, 
+              child: Text( 
+                'Check in again', 
+                style: GoogleFonts.inter( 
+                  fontSize: 15, 
+                  fontWeight: FontWeight.w500, 
+                  color: Colors.white, 
+                ), 
+              ), 
+            ), 
+          ), 
+          const SizedBox(height: 40), 
         ], 
       ), 
     ); 
+  } 
+} 
+ 
+// SVG Sector math ported to Flutter CustomPainter 
+class _CompassWheelWidget extends StatefulWidget { 
+  final ValueChanged<String> onSelect; 
+  const _CompassWheelWidget({required this.onSelect}); 
+ 
+  @override 
+  State<_CompassWheelWidget> createState() => _CompassWheelWidgetState(); 
+} 
+ 
+class _CompassWheelWidgetState extends State<_CompassWheelWidget> { 
+  String? _hovered; 
+ 
+  @override 
+  Widget build(BuildContext context) { 
+    return GestureDetector( 
+      onTapUp: (details) { 
+        // 320 is the size of the box, center is 160 
+        final cx = 160.0; 
+        final cy = 160.0; 
+        final dx = details.localPosition.dx - cx; 
+        final dy = details.localPosition.dy - cy; 
+         
+        // Add 90 degrees because 0 degrees is up in our drawing 
+        double angle = math.atan2(dy, dx) * 180 / math.pi + 90; 
+        if (angle < 0) angle += 360; 
+         
+        final radius = math.sqrt(dx * dx + dy * dy); 
+        if (radius >= 72 && radius <= 148) { 
+          // innerR = 72, outerR = 148 
+          final slice = 360 / primaryOrder.length; 
+          final index = (angle / slice).floor() % primaryOrder.length; 
+          widget.onSelect(primaryOrder[index]); 
+        } 
+      }, 
+      onPanUpdate: (details) { 
+        // update hover state if dragging over (simulating hover on mobile) 
+      }, 
+      child: CustomPaint( 
+        painter: _EmotionWheelPainter( 
+          hovered: _hovered, 
+        ), 
+      ), 
+    ); 
+  } 
+} 
+ 
+class _EmotionWheelPainter extends CustomPainter { 
+  final String? hovered; 
+  _EmotionWheelPainter({this.hovered}); 
+ 
+  @override 
+  void paint(Canvas canvas, Size size) { 
+    final cx = size.width / 2; 
+    final cy = size.height / 2; 
+    final innerR = 72.0; 
+    final outerR = 148.0; 
+    final slice = 360 / primaryOrder.length; 
+ 
+    for (int i = 0; i < primaryOrder.length; i++) { 
+      final emotion = primaryOrder[i]; 
+      final startAngle = i * slice; 
+      final sweepAngle = slice; 
+       
+      // Translate to radians and shift -90 degrees so 0 is at top 
+      final startRad = (startAngle - 90) * math.pi / 180; 
+      final sweepRad = sweepAngle * math.pi / 180; 
+ 
+      final color = primaryColors[emotion]!; 
+      final isHovered = hovered == emotion; 
+ 
+      final path = Path(); 
+      path.arcTo( 
+        Rect.fromCircle(center: Offset(cx, cy), radius: outerR),  
+        startRad,  
+        sweepRad,  
+        true 
+      ); 
+      path.arcTo( 
+        Rect.fromCircle(center: Offset(cx, cy), radius: innerR),  
+        startRad + sweepRad,  
+        -sweepRad,  
+        false 
+      ); 
+      path.close(); 
+ 
+      // Shadow if hovered 
+      if (isHovered) { 
+        canvas.drawShadow(path, color, 8, true); 
+      } 
+ 
+      final fillPaint = Paint() 
+        ..color = color.withValues(alpha: isHovered ? 0.92 : 0.68) 
+        ..style = PaintingStyle.fill; 
+      canvas.drawPath(path, fillPaint); 
+ 
+      final strokePaint = Paint() 
+        ..color = isHovered ? color.withValues(alpha: 0.85) : ZenTokens.surface 
+        ..style = PaintingStyle.stroke 
+        ..strokeWidth = isHovered ? 2.75 : 2.25; 
+      canvas.drawPath(path, strokePaint); 
+       
+      // Optional: Draw text label in the middle of the slice 
+      // (This approximates NextJS behavior if labels were visible) 
+      // But NextJS relied on tooltips/whispers, I'll draw the labels neatly. 
+      final midRad = startRad + sweepRad / 2; 
+      final labelR = (innerR + outerR) / 2; 
+      final lx = cx + math.cos(midRad) * labelR; 
+      final ly = cy + math.sin(midRad) * labelR; 
+ 
+      final textSpan = TextSpan( 
+        text: primaryLabels[emotion], 
+        style: GoogleFonts.inter( 
+          fontSize: 12,  
+          fontWeight: FontWeight.w600,  
+          color: Colors.white, 
+        ), 
+      ); 
+      final textPainter = TextPainter( 
+        text: textSpan, 
+        textDirection: TextDirection.ltr, 
+        textAlign: TextAlign.center, 
+      ); 
+      textPainter.layout(); 
+      // Save canvas to rotate text 
+      canvas.save(); 
+      canvas.translate(lx, ly); 
+      // Rotate text to align with the slice angle (add 90 deg so it reads upright mostly) 
+      double textAngle = midRad + math.pi / 2; 
+      if (textAngle > math.pi / 2 && textAngle < 3 * math.pi / 2) { 
+        textAngle += math.pi; // Flip text if upside down 
+      } 
+      canvas.rotate(textAngle); 
+      textPainter.paint(canvas, Offset(-textPainter.width / 2, -textPainter.height / 2)); 
+      canvas.restore(); 
+    } 
+  } 
+ 
+  @override 
+  bool shouldRepaint(covariant _EmotionWheelPainter oldDelegate) { 
+    return oldDelegate.hovered != hovered; 
   } 
 }

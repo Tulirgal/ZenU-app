@@ -8,36 +8,46 @@ class ApiClient {
   static const String baseUrl = 'https://zenu-backend-5dgz.onrender.com'; 
   static ApiClient? _instance; 
   late final Dio _dio; 
-  late final PersistCookieJar _cookieJar; 
+  CookieJar? _cookieJar; 
  
   ApiClient._(); 
  
   static Future<ApiClient> getInstance() async { 
     if (_instance == null) { 
       _instance = ApiClient._(); 
-      await _instance!._init(); 
+      try {
+        await _instance!._init(); 
+      } catch (e) {
+        _instance = null;
+        rethrow;
+      }
     } 
     return _instance!; 
   } 
  
   Future<void> _init() async { 
-    final dir = await getApplicationDocumentsDirectory(); 
-    _cookieJar = PersistCookieJar( 
-      ignoreExpires: false, 
-      storage: FileStorage('${dir.path}/.zenu_cookies/'), 
-    ); 
- 
-    _dio = Dio(BaseOptions( 
+    final options = BaseOptions( 
       baseUrl:        baseUrl, 
-      connectTimeout: const Duration(seconds: 30), 
-      receiveTimeout: const Duration(seconds: 30), 
+      connectTimeout: const Duration(seconds: 60), 
+      receiveTimeout: const Duration(seconds: 60), 
       headers: { 
         'Content-Type': 'application/json', 
         'Accept':       'application/json', 
       }, 
-    )); 
+    ); 
+    if (kIsWeb) { 
+      options.extra['withCredentials'] = true; 
+    } 
+    _dio = Dio(options);
  
-    _dio.interceptors.add(CookieManager(_cookieJar)); 
+    if (!kIsWeb) {
+      final dir = await getApplicationDocumentsDirectory(); 
+      _cookieJar = PersistCookieJar( 
+        ignoreExpires: false, 
+        storage: FileStorage('${dir.path}/.zenu_cookies/'), 
+      ); 
+      _dio.interceptors.add(CookieManager(_cookieJar!)); 
+    } 
  
     if (kDebugMode) { 
       _dio.interceptors.add(LogInterceptor( 
@@ -57,5 +67,9 @@ class ApiClient {
  
   Future<Response<T>> delete<T>(String path) => _dio.delete<T>(path); 
  
-  Future<void> clearCookies() => _cookieJar.deleteAll(); 
+  Future<void> clearCookies() async {
+    if (!kIsWeb && _cookieJar != null) {
+      await _cookieJar!.deleteAll();
+    }
+  }
 }

@@ -168,7 +168,7 @@ class _ModuleGridState extends State<ModuleGrid> {
                   width: 28, 
                   height: 28, 
                   decoration: BoxDecoration( 
-                    color: ZenTokens.bgSubtle.withValues(alpha: 0.9), 
+                    color: ZenTokens.bg.withValues(alpha: 0.9), 
                     shape: BoxShape.circle, 
                   ), 
                   child: const Icon(Icons.arrow_forward_rounded, size: 14, color: ZenTokens.fgMuted), 

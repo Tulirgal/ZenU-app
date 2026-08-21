@@ -301,7 +301,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
                 Container( 
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), 
                   decoration: BoxDecoration( 
-                    color: ZenTokens.bgSubtle, 
+                    color: ZenTokens.bg, 
                     borderRadius: BorderRadius.circular(ZenTokens.radiusFull), 
                     border: Border.all(color: ZenTokens.borderSoft), 
                   ), 

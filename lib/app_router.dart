@@ -22,6 +22,7 @@ import 'features/pss/pss_screen.dart';
 class AppRouter { 
   static GoRouter router(BuildContext context) => GoRouter( 
     initialLocation: '/splash', 
+    refreshListenable: context.read<AuthService>(),
     redirect: (ctx, state) { 
       final auth   = ctx.read<AuthService>(); 
       final loc    = state.matchedLocation; 

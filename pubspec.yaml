@@ -1,26 +1,51 @@
-name: zenu
-description: "ZenU — calm, personal wellness for mobile."
-publish_to: "none"
-version: 1.0.0+1
+name: zenu 
+description: "ZenU — calm, personal wellness for mobile." 
+publish_to: "none" 
+version: 1.0.0+1 
+ 
+environment: 
+  sdk: ^3.13.0 
+ 
+dependencies: 
+  flutter: 
+    sdk: flutter 
+  cupertino_icons: ^1.0.8 
+  google_fonts: ^6.2.1 
+ 
+  # HTTP + cookies (backend auth uses HTTP-only cookies) 
+  dio: ^5.4.0 
+  cookie_jar: ^4.0.8 
+  dio_cookie_manager: ^3.1.2 
+  path_provider: ^2.1.3 
+ 
+  # State management 
+  provider: ^6.1.2 
+ 
+  # Navigation 
+  go_router: ^13.2.0 
+ 
+  # Local storage 
+  shared_preferences: ^2.2.3 
+  flutter_secure_storage: ^9.0.0 
+  hive: ^2.2.3 
+  hive_flutter: ^1.1.0 
+ 
+  # Animations 
+  flutter_animate: ^4.5.0 
+  # Audio (mindfulness JPMR player) 
+  audioplayers: ^6.0.0 
 
-environment:
-  sdk: ^3.13.0
+dev_dependencies: 
+  flutter_test: 
+    sdk: flutter 
+  flutter_lints: ^6.0.0 
+  hive_generator: ^2.0.1 
+  build_runner: ^2.4.9 
 
-dependencies:
-  flutter:
-    sdk: flutter
-  cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: ^6.0.0
-
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/panda/
-    - assets/animations/
+flutter: 
+  uses-material-design: true 
+  assets: 
+    - assets/images/ 
+    - assets/panda/ 
+    - assets/animations/ 
     - assets/audio/

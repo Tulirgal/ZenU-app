@@ -1,33 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-import 'core/theme/app_colors.dart';
-import 'core/theme/app_theme.dart';
-import 'core/theme/design_system_showcase.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: AppColors.background,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
   runApp(const ZenUApp());
 }
 
-class ZenUApp extends StatelessWidget {
+class ZenUApp extends StatefulWidget {
   const ZenUApp({super.key});
+
+  @override
+  State<ZenUApp> createState() => _ZenUAppState();
+}
+
+class _ZenUAppState extends State<ZenUApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Simulate greeting sequence timer
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'ZenU',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      home: const DesignSystemShowcase(),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('ZenU')),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Design System Showcase'),
+              Text('TEMPORARY DEVELOPMENT PLACEHOLDER'),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

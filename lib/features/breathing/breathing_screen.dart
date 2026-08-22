@@ -1,26 +1,54 @@
-import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-import '../../core/auth/auth_service.dart';
 import '../../core/theme/zen_tokens.dart';
 import '../../shared/widgets/module_background.dart';
+import 'widgets/breathing_player_widget.dart';
+import 'widgets/pattern_motif_visual.dart';
 
 class BreathingPattern {
   final String id;
   final String name;
+  final String description;
   final List<int> steps; // Inhale, hold, exhale, hold
+  final int defaultMinutes;
+  final String difficulty;
 
-  const BreathingPattern(this.id, this.name, this.steps);
+  const BreathingPattern(
+    this.id,
+    this.name,
+    this.description,
+    this.steps,
+    this.defaultMinutes,
+    this.difficulty,
+  );
 }
 
 const List<BreathingPattern> _patterns = [
-  BreathingPattern('box', 'Box', [4, 4, 4, 4]),
-  BreathingPattern('478', '4-7-8', [4, 7, 8]),
-  BreathingPattern('deep', 'Deep', [5, 5]),
-  BreathingPattern('cyclic', 'Cyclic Sighing', [3, 2, 6]),
+  BreathingPattern(
+    'box', 
+    'Box Breathing', 
+    'Steady calming rhythm', 
+    [4, 4, 4, 4], 
+    3, 
+    'Beginner'
+  ),
+  BreathingPattern(
+    '478', 
+    '4-7-8 Breathing', 
+    'Deep slow exhale', 
+    [4, 7, 8], 
+    3, 
+    'Intermediate'
+  ),
+  BreathingPattern(
+    'coherent', 
+    'Coherent Breathing', 
+    'Slow and even 5-5 rhythm', 
+    [5, 5], 
+    5, 
+    'Intermediate'
+  ),
 ];
 
 class BreathingScreen extends StatefulWidget {
@@ -30,117 +58,18 @@ class BreathingScreen extends StatefulWidget {
   State<BreathingScreen> createState() => _BreathingScreenState();
 }
 
-class _BreathingScreenState extends State<BreathingScreen> with TickerProviderStateMixin {
-  late final AnimationController _orbController;
-  late final AnimationController _ringController;
+class _BreathingScreenState extends State<BreathingScreen> {
+  BreathingPattern? _selectedPattern;
 
-  BreathingPattern _currentPattern = _patterns[0];
-  bool _isPlaying = false;
-  int _phaseIndex = 0;
-  int _secondsRemaining = 4;
-  Timer? _timer;
-  int _cyclesCompleted = 0;
-  int _totalSeconds = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _orbController = AnimationController(vsync: this);
-    _ringController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-
-    _secondsRemaining = _currentPattern.steps[0];
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthService>().trackEngagement('breathing', 'opened');
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _orbController.dispose();
-    _ringController.dispose();
-    super.dispose();
-  }
-
-  void _selectPattern(BreathingPattern pattern) {
-    if (_isPlaying) return;
+  void _startPattern(BreathingPattern pattern) {
     setState(() {
-      _currentPattern = pattern;
-      _phaseIndex = 0;
-      _secondsRemaining = pattern.steps[0];
-      _orbController.value = 0.0;
+      _selectedPattern = pattern;
     });
   }
 
-  void _togglePlay() {
+  void _closePlayer() {
     setState(() {
-      _isPlaying = !_isPlaying;
-      if (_isPlaying) {
-        _playPhase(resume: true);
-        _startTimer();
-      } else {
-        _timer?.cancel();
-        _orbController.stop();
-      }
-    });
-  }
-
-  String _getPhaseName(int index, int totalSteps) {
-    if (totalSteps == 2) {
-      return index == 0 ? 'Breathe In' : 'Breathe Out';
-    }
-    if (totalSteps == 3) {
-      return index == 0 ? 'Breathe In' : (index == 1 ? 'Hold' : 'Breathe Out');
-    }
-    return index == 0
-        ? 'Breathe In'
-        : (index == 1
-            ? 'Hold'
-            : (index == 2 ? 'Breathe Out' : 'Hold'));
-  }
-
-  void _playPhase({bool resume = false}) {
-    final duration = _currentPattern.steps[_phaseIndex];
-    final phaseName = _getPhaseName(_phaseIndex, _currentPattern.steps.length);
-    
-    _orbController.duration = Duration(seconds: duration);
-    
-    if (phaseName == 'Breathe In') {
-      resume ? _orbController.forward() : _orbController.forward(from: 0.0);
-    } else if (phaseName == 'Breathe Out') {
-      resume ? _orbController.reverse() : _orbController.reverse(from: 1.0);
-    }
-    // Hold phase does nothing to the controller
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _totalSeconds++;
-        _secondsRemaining--;
-
-        if (_secondsRemaining <= 0) {
-          _phaseIndex = (_phaseIndex + 1) % _currentPattern.steps.length;
-          _secondsRemaining = _currentPattern.steps[_phaseIndex];
-          
-          if (_phaseIndex == 0) {
-            _cyclesCompleted++;
-            if (_cyclesCompleted % 3 == 0) {
-              context.read<AuthService>().trackEngagement(
-                    'breathing',
-                    'completed',
-                    durationSec: _totalSeconds,
-                  );
-            }
-          }
-          _playPhase();
-        }
-      });
+      _selectedPattern = null;
     });
   }
 
@@ -150,203 +79,364 @@ class _BreathingScreenState extends State<BreathingScreen> with TickerProviderSt
       backgroundColor: ZenTokens.zenBg,
       body: ModuleBackground(
         moduleKey: 'breathing',
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              _buildTechniqueSelector(),
-              Expanded(
-                child: Center(
-                  child: _buildOrb(),
+        child: Stack(
+          children: [
+            // Dashboard Layout
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 32),
+                    _buildQuickSession(),
+                    const SizedBox(height: 48),
+                    _buildPracticeGrid(),
+                    const SizedBox(height: 32),
+                  ],
                 ),
               ),
-              _buildControls(),
-            ],
-          ),
+            ),
+            
+            // Full Screen Player Overlay
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _selectedPattern != null
+                  ? BreathingPlayerWidget(
+                      key: ValueKey(_selectedPattern!.id),
+                      pattern: _selectedPattern!,
+                      onClose: _closePlayer,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ZenTokens.zenFg),
-            onPressed: () => context.go('/dashboard'),
-          ),
-          Text(
-            'Breathe',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: ZenTokens.zenFg,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTechniqueSelector() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: _patterns.map((pattern) {
-          final isActive = pattern.id == _currentPattern.id;
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: GestureDetector(
-              onTap: () => _selectPattern(pattern),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isActive ? ZenTokens.zenPrimary : ZenTokens.zenSurface,
-                  borderRadius: BorderRadius.circular(ZenTokens.radiusZenFull),
-                  border: Border.all(
-                    color: isActive ? ZenTokens.zenPrimary : ZenTokens.zenBorderSoft,
-                  ),
-                ),
-                child: Text(
-                  pattern.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: isActive ? Colors.white : ZenTokens.zenFgMuted,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildOrb() {
-    final phaseName = _getPhaseName(_phaseIndex, _currentPattern.steps.length);
-    final orbSize = 240.0;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: Text(
-            phaseName,
-            key: ValueKey(phaseName),
-            style: GoogleFonts.inter(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: ZenTokens.zenFg,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        const SizedBox(height: 48),
-        SizedBox(
-          width: orbSize,
-          height: orbSize,
-          child: Stack(
-            alignment: Alignment.center,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Outer rings
-              for (int i = 2; i >= 0; i--)
-                AnimatedBuilder(
-                  animation: _ringController,
-                  builder: (context, child) {
-                    final pulse = _isPlaying ? math.sin(_ringController.value * math.pi) : 0.0;
-                    final baseSize = orbSize * (0.55 + (0.15 * i));
-                    final size = baseSize + (pulse * 10 * (i + 1));
-                    return Container(
-                      width: size,
-                      height: size,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.transparent,
-                        border: Border.all(
-                          color: const Color(0xFF38BDF8).withValues(alpha: 0.15 - (i * 0.04)),
-                          width: 1.5,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-              // Orb
-              AnimatedBuilder(
-                animation: _orbController,
-                builder: (context, child) {
-                  // Tween from 0.55 to 1.0 based on controller
-                  final scale = 0.55 + (_orbController.value * 0.45);
-                  return Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      width: orbSize,
-                      height: orbSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const RadialGradient(
-                          colors: [
-                            Color(0x8038BDF8),
-                            Color(0x2038BDF8),
-                            Colors.transparent,
-                          ],
-                          stops: [0.2, 0.7, 1.0],
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          _isPlaying ? '$_secondsRemaining' : 'Start',
-                          style: GoogleFonts.inter(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
+              GestureDetector(
+                onTap: () => context.go('/dashboard'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: ZenTokens.zenFgMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Breathe',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: ZenTokens.zenFgMuted,
                       ),
                     ),
-                  );
-                },
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Breathing',
+                style: GoogleFonts.lora(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w600,
+                  color: ZenTokens.zenFg,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Find your rhythm. 🤍',
+                style: GoogleFonts.lora(
+                  fontSize: 20,
+                  color: ZenTokens.zenFg,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'A few slow breaths can change the way this moment feels.',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: ZenTokens.zenFgMuted,
+                  height: 1.5,
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 48),
-        Text(
-          'Follow the rhythm',
-          style: GoogleFonts.inter(
-            fontSize: 15,
-            color: ZenTokens.zenFgMuted,
+        // Panda Avatar Placeholder (Using an asset if available, else a colored circle)
+        Container(
+          width: 80,
+          height: 80,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFF1E293B),
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/panda/idle.png', // Or whatever valid panda asset exists
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.favorite_rounded,
+                color: Colors.pinkAccent,
+                size: 32,
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildControls() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: FilledButton(
-        onPressed: _togglePlay,
-        style: FilledButton.styleFrom(
-          backgroundColor: ZenTokens.zenPrimary,
-          foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(ZenTokens.radiusZenXl),
+  Widget _buildQuickSession() {
+    final pattern = _patterns[0]; // Box Breathing
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD3DFE2).withValues(alpha: 0.8), // Sage/blueish background from screenshot
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E295A).withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 500;
+          
+          final content = [
+            const PatternMotifVisual(size: 80, isActive: true),
+            const SizedBox(width: 24, height: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'QUICK SESSION FOR YOU',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.2,
+                      color: const Color(0xFF6366F1), // Indigo accent
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    pattern.name,
+                    style: GoogleFonts.lora(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w500,
+                      color: ZenTokens.zenFg,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${pattern.steps.join(' · ')}  ·  ${pattern.defaultMinutes} min',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: ZenTokens.zenFgMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24, height: 24),
+            FilledButton(
+              onPressed: () => _startPattern(pattern),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6), // Blue button
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Start',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_rounded, size: 16),
+                ],
+              ),
+            ),
+          ];
+
+          if (isDesktop) {
+            return Row(children: content);
+          } else {
+            return Column(
+              children: [
+                content[0], // Icon
+                content[1], // Spacer
+                content[2], // Text Column
+                content[3], // Spacer
+                content[4], // Button
+              ],
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildPracticeGrid() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Choose a practice',
+          style: GoogleFonts.lora(
+            fontSize: 24,
+            color: ZenTokens.zenFg,
           ),
         ),
-        child: Text(
-          _isPlaying ? 'Stop' : 'Start',
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth > 700;
+            if (isDesktop) {
+              return Row(
+                children: _patterns.map((pattern) {
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: pattern != _patterns.last ? 16.0 : 0,
+                      ),
+                      child: _buildPracticeCard(pattern),
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+            
+            return Column(
+              children: _patterns.map((pattern) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: _buildPracticeCard(pattern),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPracticeCard(BreathingPattern pattern) {
+    return GestureDetector(
+      onTap: () => _startPattern(pattern),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE2E8F0).withValues(alpha: 0.9), // Lighter soft blue-gray
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1E295A).withValues(alpha: 0.03),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: PatternMotifVisual(size: 64, isActive: false),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              pattern.name,
+              style: GoogleFonts.lora(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: ZenTokens.zenFg,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              pattern.description,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: ZenTokens.zenFgMuted,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              pattern.steps.join(' · '),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF6366F1), // Indigo accent
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '~${pattern.defaultMinutes} min',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: ZenTokens.zenFgMuted,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    pattern.difficulty,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: ZenTokens.zenFgMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text(
+                  'Start',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF3B82F6),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF3B82F6)),
+              ],
+            ),
+          ],
         ),
       ),
     );

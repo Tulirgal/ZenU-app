@@ -306,27 +306,40 @@ class _DoodleToolkitState extends State<DoodleToolkit> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: doodlePalette.map((swatch) {
-                        final isActive = widget.currentColor == swatch.color;
-                        return GestureDetector(
-                          onTap: () => widget.onColorChange(swatch.color),
-                          child: Container(
-                            width: 34,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: swatch.color,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isActive ? ZenTokens.zenSecondary : ZenTokens.zenBorderSoft.withValues(alpha: 0.8),
-                                width: isActive ? 2 : 1,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                    Container(
+                      height: 24,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFFF0000), // Red
+                            Color(0xFFFFFF00), // Yellow
+                            Color(0xFF00FF00), // Green
+                            Color(0xFF00FFFF), // Cyan
+                            Color(0xFF0000FF), // Blue
+                            Color(0xFFFF00FF), // Magenta
+                            Color(0xFFFF0000), // Red
+                          ],
+                        ),
+                      ),
+                      child: SliderTheme(
+                        data: SliderThemeData(
+                          trackHeight: 24,
+                          activeTrackColor: Colors.transparent,
+                          inactiveTrackColor: Colors.transparent,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 4),
+                          thumbColor: Colors.white,
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                        ),
+                        child: Slider(
+                          min: 0,
+                          max: 360,
+                          value: HSVColor.fromColor(widget.currentColor).hue,
+                          onChanged: (val) {
+                            widget.onColorChange(HSVColor.fromAHSV(1.0, val, 1.0, 1.0).toColor());
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 20),
                   ],

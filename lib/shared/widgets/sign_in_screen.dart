@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class InnerCompassScreen extends StatelessWidget {
-  const InnerCompassScreen({super.key});
+class SignInScreen extends StatelessWidget {
+  const SignInScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Text('InnerCompassScreen'),
+        child: Text('SignInScreen'),
       ),
     );
   }

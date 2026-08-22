@@ -58,7 +58,7 @@ class _SignInScreenState extends State<SignInScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
+                constraints: const BoxConstraints(maxWidth: 384),
                 child: Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(

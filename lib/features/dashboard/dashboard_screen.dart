@@ -71,10 +71,10 @@ class DashboardScreen extends StatelessWidget {
         Text(
           "You're safe here.",
           style: GoogleFonts.inter(
-            fontSize: 40,
+            fontSize: 32,
             fontWeight: FontWeight.w700,
             color: ZenTokens.zenFg,
-            letterSpacing: -0.03 * 40,
+            letterSpacing: -0.03 * 32,
             height: 1.16,
           ),
         ),

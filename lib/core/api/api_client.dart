@@ -8,7 +8,7 @@ class ApiClient {
   static const String _base = 'https://zenu-backend-5dgz.onrender.com';
   static ApiClient? _instance;
   late final Dio _dio;
-  late final PersistCookieJar _jar;
+  CookieJar? _jar;
 
   ApiClient._();
 
@@ -21,18 +21,22 @@ class ApiClient {
   bool _initialized = false;
 
   Future<void> _init() async {
-    final dir = await getApplicationDocumentsDirectory();
-    _jar = PersistCookieJar(
-      ignoreExpires: false,
-      storage: FileStorage('${dir.path}/.zenu_cookies/'),
-    );
     _dio = Dio(BaseOptions(
       baseUrl:        _base,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
       headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      extra: const {'withCredentials': true},
     ));
-    _dio.interceptors.add(CookieManager(_jar));
+    
+    if (!kIsWeb) {
+      final dir = await getApplicationDocumentsDirectory();
+      _jar = PersistCookieJar(
+        ignoreExpires: false,
+        storage: FileStorage('${dir.path}/.zenu_cookies/'),
+      );
+      _dio.interceptors.add(CookieManager(_jar!));
+    }
     if (kDebugMode) {
       _dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true, error: true));
     }
@@ -46,5 +50,5 @@ class ApiClient {
   Future<Response<T>> patch<T>(String path, {dynamic data}) =>
       _dio.patch<T>(path, data: data);
   Future<Response<T>> delete<T>(String path) => _dio.delete<T>(path);
-  Future<void> clearCookies() => _jar.deleteAll();
+  Future<void> clearCookies() async => await _jar?.deleteAll();
 }

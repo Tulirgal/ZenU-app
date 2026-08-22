@@ -44,7 +44,9 @@ class ZenTokens {
   static const Color zenJoy = Color(0xFFF6AF23); // from --zen-joy
   static const Color zenJoySoft = Color(0xFFFEF8EB); // from --zen-joy-soft
   static const Color zenBorder = Color(0xFFDADDE7); // from --zen-border
-  static const Color zenBorderSoft = Color(0xFFEAEBF1); // from --zen-border-soft
+  static const Color zenBorderSoft = Color.fromRGBO(255, 255, 255, 0.40);
+  
+  static const Color zenDanger = Color(0xFFEF4444); // from --zen-border-soft
   static const Color zenBorderFocus = Color(0xFF2F65DA); // from --zen-border-focus
   static const Color zenSuccess = Color(0xFF259D51); // from --zen-success
   static const Color zenSuccessSoft = Color(0xFFEAFAF0); // from --zen-success-soft

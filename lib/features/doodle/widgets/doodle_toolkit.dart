@@ -67,6 +67,28 @@ class DoodleToolkit extends StatefulWidget {
 
 class _DoodleToolkitState extends State<DoodleToolkit> {
   bool _confirmClear = false;
+  bool _showStylePopup = true;
+
+  @override
+  void didUpdateWidget(DoodleToolkit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentTool != oldWidget.currentTool) {
+      if (widget.currentTool == DoodleToolType.draw || widget.currentTool == DoodleToolType.eraser) {
+        _showStylePopup = true;
+      } else {
+        _showStylePopup = false;
+      }
+    }
+  }
+
+  void _handleToolTap(DoodleToolType tool) {
+    setState(() => _confirmClear = false);
+    if (widget.currentTool == tool && (tool == DoodleToolType.draw || tool == DoodleToolType.eraser)) {
+      setState(() => _showStylePopup = !_showStylePopup);
+    } else {
+      widget.onToolChange(tool);
+    }
+  }
 
   Widget _buildBtn({
     required IconData icon,
@@ -111,11 +133,9 @@ class _DoodleToolkitState extends State<DoodleToolkit> {
 
   @override
   Widget build(BuildContext context) {
-    final showStyle = widget.currentTool == DoodleToolType.draw || 
-                      widget.currentTool == DoodleToolType.eraser;
-
-    return Stack(
-      clipBehavior: Clip.none,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 60,
@@ -144,26 +164,17 @@ class _DoodleToolkitState extends State<DoodleToolkit> {
                 _buildBtn(
                   icon: Icons.edit_rounded,
                   isActive: widget.currentTool == DoodleToolType.draw,
-                  onTap: () {
-                    setState(() => _confirmClear = false);
-                    widget.onToolChange(DoodleToolType.draw);
-                  },
+                  onTap: () => _handleToolTap(DoodleToolType.draw),
                 ),
                 _buildBtn(
-                  icon: Icons.rectangle_outlined, // Closer to eraser
+                  icon: Icons.rectangle_outlined,
                   isActive: widget.currentTool == DoodleToolType.eraser,
-                  onTap: () {
-                    setState(() => _confirmClear = false);
-                    widget.onToolChange(DoodleToolType.eraser);
-                  },
+                  onTap: () => _handleToolTap(DoodleToolType.eraser),
                 ),
                 _buildBtn(
                   icon: Icons.format_color_fill_rounded,
                   isActive: widget.currentTool == DoodleToolType.fill,
-                  onTap: () {
-                    setState(() => _confirmClear = false);
-                    widget.onToolChange(DoodleToolType.fill);
-                  },
+                  onTap: () => _handleToolTap(DoodleToolType.fill),
                 ),
                 _buildBtn(
                   icon: Icons.grid_3x3_rounded,
@@ -198,186 +209,181 @@ class _DoodleToolkitState extends State<DoodleToolkit> {
           ),
         ),
         
+        const SizedBox(width: 10),
+        
         // Popover for Clear Confirm
         if (_confirmClear)
-          Positioned(
-            left: 70,
-            bottom: 40,
-            child: Container(
-              width: 180,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: ZenTokens.zenBorderSoft),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                  )
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Clear this pattern?',
-                    style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFg),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => setState(() => _confirmClear = false),
-                          child: Text('Cancel', style: GoogleFonts.inter(fontSize: 12)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: ZenTokens.zenDanger.withValues(alpha: 0.1),
-                            foregroundColor: ZenTokens.zenDanger,
-                            elevation: 0,
-                            padding: EdgeInsets.zero,
-                          ),
-                          onPressed: () {
-                            setState(() => _confirmClear = false);
-                            widget.onClear();
-                          },
-                          child: Text('Clear', style: GoogleFonts.inter(fontSize: 12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          Container(
+            margin: const EdgeInsets.only(top: 250),
+            width: 180,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: ZenTokens.zenBorderSoft),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 10,
+                )
+              ],
             ),
-          ),
-
-        // Popover for Pen/Eraser Style
-        if (showStyle && !_confirmClear)
-          Positioned(
-            left: 70,
-            top: 70,
-            child: Container(
-              width: 192,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: ZenTokens.zenBorderSoft.withValues(alpha: 0.7)),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1E295A).withValues(alpha: 0.18),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.currentTool == DoodleToolType.draw ? 'PEN' : 'ERASER',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.0,
-                      color: ZenTokens.zenFgMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (widget.currentTool == DoodleToolType.draw) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Color', style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFgMuted)),
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: widget.currentColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: ZenTokens.zenBorderSoft),
-                          ),
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      height: 24,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFF0000), // Red
-                            Color(0xFFFFFF00), // Yellow
-                            Color(0xFF00FF00), // Green
-                            Color(0xFF00FFFF), // Cyan
-                            Color(0xFF0000FF), // Blue
-                            Color(0xFFFF00FF), // Magenta
-                            Color(0xFFFF0000), // Red
-                          ],
-                        ),
-                      ),
-                      child: SliderTheme(
-                        data: SliderThemeData(
-                          trackHeight: 24,
-                          activeTrackColor: Colors.transparent,
-                          inactiveTrackColor: Colors.transparent,
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 4),
-                          thumbColor: Colors.white,
-                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                        ),
-                        child: Slider(
-                          min: 0,
-                          max: 360,
-                          value: HSVColor.fromColor(widget.currentColor).hue,
-                          onChanged: (val) {
-                            widget.onColorChange(HSVColor.fromAHSV(1.0, val, 1.0, 1.0).toColor());
-                          },
-                        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Clear this pattern?',
+                  style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFg),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => setState(() => _confirmClear = false),
+                        child: Text('Cancel', style: GoogleFonts.inter(fontSize: 12)),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ZenTokens.zenDanger.withValues(alpha: 0.1),
+                          foregroundColor: ZenTokens.zenDanger,
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                        ),
+                        onPressed: () {
+                          setState(() => _confirmClear = false);
+                          widget.onClear();
+                        },
+                        child: Text('Clear', style: GoogleFonts.inter(fontSize: 12)),
+                      ),
+                    ),
                   ],
+                ),
+              ],
+            ),
+          )
+        // Popover for Pen/Eraser Style
+        else if (_showStylePopup)
+          Container(
+            margin: const EdgeInsets.only(top: 70),
+            width: 192,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: ZenTokens.zenBorderSoft.withValues(alpha: 0.7)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1E295A).withValues(alpha: 0.18),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.currentTool == DoodleToolType.draw ? 'PEN' : 'ERASER',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.0,
+                    color: ZenTokens.zenFgMuted,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (widget.currentTool == DoodleToolType.draw) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Size', style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFgMuted)),
-                      Text(
-                        '${(widget.currentTool == DoodleToolType.draw ? widget.brushSize : widget.eraserSize).toInt()}px',
-                        style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFg),
-                      ),
+                      Text('Color', style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFgMuted)),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: widget.currentColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: ZenTokens.zenBorderSoft),
+                        ),
+                      )
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  SliderTheme(
-                    data: SliderThemeData(
-                      thumbColor: ZenTokens.zenSecondary,
-                      activeTrackColor: ZenTokens.zenSecondary,
-                      inactiveTrackColor: ZenTokens.zenBorderSoft,
-                      trackHeight: 4,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 24,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFF0000), // Red
+                          Color(0xFFFFFF00), // Yellow
+                          Color(0xFF00FF00), // Green
+                          Color(0xFF00FFFF), // Cyan
+                          Color(0xFF0000FF), // Blue
+                          Color(0xFFFF00FF), // Magenta
+                          Color(0xFFFF0000), // Red
+                        ],
+                      ),
                     ),
-                    child: Slider(
-                      min: widget.currentTool == DoodleToolType.draw ? 1 : 4,
-                      max: widget.currentTool == DoodleToolType.draw ? 40 : 120,
-                      value: widget.currentTool == DoodleToolType.draw ? widget.brushSize : widget.eraserSize,
-                      onChanged: (val) {
-                        if (widget.currentTool == DoodleToolType.draw) {
-                          widget.onBrushSizeChange(val);
-                        } else {
-                          widget.onEraserSizeChange(val);
-                        }
-                      },
+                    child: SliderTheme(
+                      data: SliderThemeData(
+                        trackHeight: 24,
+                        activeTrackColor: Colors.transparent,
+                        inactiveTrackColor: Colors.transparent,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 4),
+                        thumbColor: Colors.white,
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                      ),
+                      child: Slider(
+                        min: 0,
+                        max: 360,
+                        value: HSVColor.fromColor(widget.currentColor).hue,
+                        onChanged: (val) {
+                          widget.onColorChange(HSVColor.fromAHSV(1.0, val, 1.0, 1.0).toColor());
+                        },
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
-              ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Size', style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFgMuted)),
+                    Text(
+                      '${(widget.currentTool == DoodleToolType.draw ? widget.brushSize : widget.eraserSize).toInt()}px',
+                      style: GoogleFonts.inter(fontSize: 12, color: ZenTokens.zenFg),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderThemeData(
+                    thumbColor: ZenTokens.zenSecondary,
+                    activeTrackColor: ZenTokens.zenSecondary,
+                    inactiveTrackColor: ZenTokens.zenBorderSoft,
+                    trackHeight: 4,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                  ),
+                  child: Slider(
+                    min: widget.currentTool == DoodleToolType.draw ? 1 : 4,
+                    max: widget.currentTool == DoodleToolType.draw ? 40 : 120,
+                    value: widget.currentTool == DoodleToolType.draw ? widget.brushSize : widget.eraserSize,
+                    onChanged: (val) {
+                      if (widget.currentTool == DoodleToolType.draw) {
+                        widget.onBrushSizeChange(val);
+                      } else {
+                        widget.onEraserSizeChange(val);
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
       ],

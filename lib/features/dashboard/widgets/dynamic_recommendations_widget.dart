@@ -15,6 +15,7 @@ class _DynamicRecommendationsWidgetState extends State<DynamicRecommendationsWid
   bool _isLoading = true;
   List<dynamic> _recommendations = [];
   Map<String, dynamic> _contextData = {};
+  bool _showWhy = false;
 
   final List<Map<String, dynamic>> _defaultRecs = [
     {
@@ -119,10 +120,10 @@ class _DynamicRecommendationsWidgetState extends State<DynamicRecommendationsWid
     final displayRecs = _recommendations.take(3).toList();
     if (displayRecs.isEmpty) return const SizedBox.shrink();
 
-    String contextLine = 'Personalised from your recent mood and time of day.';
+    String contextLine = 'Personalised from your recent mood, tone, and time of day.';
     if (_contextData['time_of_day'] != null) {
       final tod = _contextData['time_of_day'].toString().replaceAll('_', ' ');
-      contextLine = 'Personalised from your recent mood and time of day ($tod).';
+      contextLine = 'Personalised from your recent mood, tone, and time of day ($tod).';
     }
 
     return Container(
@@ -149,15 +150,6 @@ class _DynamicRecommendationsWidgetState extends State<DynamicRecommendationsWid
               fontWeight: FontWeight.w600,
               letterSpacing: 0.1 * 12,
               color: ZenTokens.zenSecondary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            contextLine,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: ZenTokens.zenFgMuted,
-              height: 1.4,
             ),
           ),
           const SizedBox(height: 24),
@@ -213,19 +205,39 @@ class _DynamicRecommendationsWidgetState extends State<DynamicRecommendationsWid
             },
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                'Why these?',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
+          GestureDetector(
+            onTap: () => setState(() => _showWhy = !_showWhy),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Why these?',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: ZenTokens.zenFgMuted,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _showWhy ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                  size: 16,
                   color: ZenTokens.zenFgMuted,
                 ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(Icons.expand_more_rounded, size: 16, color: ZenTokens.zenFgMuted),
-            ],
+              ],
+            ),
           ),
+          if (_showWhy) ...[
+            const SizedBox(height: 8),
+            Text(
+              contextLine,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: ZenTokens.zenFgMuted,
+                height: 1.4,
+              ),
+            ),
+          ],
         ],
       ),
     );

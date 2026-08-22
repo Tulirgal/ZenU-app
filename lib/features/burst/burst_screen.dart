@@ -171,7 +171,7 @@ class _BurstScreenState extends State<BurstScreen> with TickerProviderStateMixin
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-                    onPressed: () => context.pop(),
+                    onPressed: () => context.go('/dashboard'),
                   ),
                 ),
               ),

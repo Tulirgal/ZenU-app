@@ -155,7 +155,7 @@ class DashboardScreen extends StatelessWidget {
                     SizedBox(width: 16),
                     Expanded(child: RecommendationCardWidget(
                       index: 2,
-                      moduleKey: 'journal_gratitude',
+                      moduleKey: 'gratitude',
                       title: 'Gratitude',
                       description: 'Notice one good thing today.',
                       duration: 5,
@@ -187,7 +187,7 @@ class DashboardScreen extends StatelessWidget {
                   SizedBox(height: 16),
                   RecommendationCardWidget(
                     index: 2,
-                    moduleKey: 'journal_gratitude',
+                    moduleKey: 'gratitude',
                     title: 'Gratitude',
                     description: 'Notice one good thing today.',
                     duration: 5,

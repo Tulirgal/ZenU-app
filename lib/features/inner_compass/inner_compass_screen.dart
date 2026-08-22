@@ -143,7 +143,7 @@ class _InnerCompassScreenState extends State<InnerCompassScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ZenTokens.zenFg),
-                onPressed: () => context.pop(),
+                onPressed: () => context.go('/dashboard'),
               ),
               Text(
                 'Inner Compass',

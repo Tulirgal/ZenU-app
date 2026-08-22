@@ -238,7 +238,7 @@ class _HealingGardenScreenState extends State<HealingGardenScreen> with SingleTi
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFFede4d3)),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/dashboard'),
         ),
         title: Text(
           'Healing Garden',

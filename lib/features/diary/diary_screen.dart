@@ -143,7 +143,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ZenTokens.zenFg),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/dashboard'),
         ),
         title: Text('Diary', style: GoogleFonts.inter(color: ZenTokens.zenFg, fontSize: 16)),
         actions: [

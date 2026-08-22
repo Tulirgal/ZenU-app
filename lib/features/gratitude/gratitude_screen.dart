@@ -141,7 +141,7 @@ class _GratitudeScreenState extends State<GratitudeScreen> with TickerProviderSt
             children: [
               IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ZenTokens.zenFg),
-                onPressed: () => context.pop(),
+                onPressed: () => context.go('/dashboard'),
               ),
               Text(
                 'Gratitude',

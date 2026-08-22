@@ -190,7 +190,7 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/dashboard'),
           ),
           const SizedBox(width: 8),
           Expanded(

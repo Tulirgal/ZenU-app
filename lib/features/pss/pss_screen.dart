@@ -138,7 +138,7 @@ class _PSSScreenState extends State<PSSScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.close_rounded, color: ZenTokens.zenFg),
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/dashboard'),
           ),
         ),
         body: Center(
@@ -175,7 +175,7 @@ class _PSSScreenState extends State<PSSScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.close_rounded, color: ZenTokens.zenFg),
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/dashboard'),
           ),
         ),
         body: Center(
@@ -232,7 +232,7 @@ class _PSSScreenState extends State<PSSScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close_rounded, color: ZenTokens.zenFg),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/dashboard'),
         ),
         title: Text(
           'Check-in (${_currentIndex + 1}/${_questions.length})',

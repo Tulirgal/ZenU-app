@@ -13,6 +13,9 @@ class ModuleTheme {
   final Color cardBorder;
   final Color particleColor;
   final int particleCount;
+  final double particleSizeMin;
+  final double particleSizeMax;
+  final double particleSpeed;
   final LiveEffect liveEffect;
 
   const ModuleTheme({
@@ -25,6 +28,9 @@ class ModuleTheme {
     required this.cardBorder,
     required this.particleColor,
     required this.particleCount,
+    required this.particleSizeMin,
+    required this.particleSizeMax,
+    required this.particleSpeed,
     required this.liveEffect,
   });
 }
@@ -45,6 +51,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(167, 139, 250, 0.2),
       particleColor: Color(0xFFC4B5FD),
       particleCount: 30,
+      particleSizeMin: 1,
+      particleSizeMax: 3,
+      particleSpeed: 0.3,
       liveEffect: LiveEffect.aurora,
     ),
     'breathing': const ModuleTheme(
@@ -61,6 +70,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(56, 189, 248, 0.25),
       particleColor: Color(0xFF38BDF8),
       particleCount: 20,
+      particleSizeMin: 2,
+      particleSizeMax: 5,
+      particleSpeed: 0.2,
       liveEffect: LiveEffect.ripples,
     ),
     'mindfulness': const ModuleTheme(
@@ -77,6 +89,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(74, 222, 128, 0.2),
       particleColor: Color(0xFF86EFAC),
       particleCount: 25,
+      particleSizeMin: 2,
+      particleSizeMax: 6,
+      particleSpeed: 0.15,
       liveEffect: LiveEffect.leaves,
     ),
     'gratitude': const ModuleTheme(
@@ -93,6 +108,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(245, 158, 11, 0.25),
       particleColor: Color(0xFFFCD34D),
       particleCount: 20,
+      particleSizeMin: 1,
+      particleSizeMax: 3,
+      particleSpeed: 0.2,
       liveEffect: LiveEffect.petals,
     ),
     'diary': const ModuleTheme(
@@ -109,6 +127,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(129, 140, 248, 0.2),
       particleColor: Color(0xFFA5B4FC),
       particleCount: 40,
+      particleSizeMin: 1,
+      particleSizeMax: 2,
+      particleSpeed: 0.1,
       liveEffect: LiveEffect.stars,
     ),
     'doodle': const ModuleTheme(
@@ -125,6 +146,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(240, 171, 252, 0.2),
       particleColor: Color(0xFFF0ABFC),
       particleCount: 35,
+      particleSizeMin: 2,
+      particleSizeMax: 5,
+      particleSpeed: 0.25,
       liveEffect: LiveEffect.bubbles,
     ),
     'bubble': const ModuleTheme(
@@ -141,6 +165,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(148, 210, 189, 0.25),
       particleColor: Color(0xFF94D2BD),
       particleCount: 18,
+      particleSizeMin: 8,
+      particleSizeMax: 24,
+      particleSpeed: 0.3,
       liveEffect: LiveEffect.bubbles,
     ),
     'burst': const ModuleTheme(
@@ -157,6 +184,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(192, 132, 252, 0.25),
       particleColor: Color(0xFFE9D5FF),
       particleCount: 45,
+      particleSizeMin: 1,
+      particleSizeMax: 3,
+      particleSpeed: 0.8,
       liveEffect: LiveEffect.stars,
     ),
     'scribble': const ModuleTheme(
@@ -173,6 +203,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(217, 119, 6, 0.2),
       particleColor: Color(0xFFFCD34D),
       particleCount: 12,
+      particleSizeMin: 1,
+      particleSizeMax: 3,
+      particleSpeed: 0.15,
       liveEffect: LiveEffect.none,
     ),
     'chat': const ModuleTheme(
@@ -189,6 +222,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(96, 165, 250, 0.2),
       particleColor: Color(0xFF93C5FD),
       particleCount: 25,
+      particleSizeMin: 1,
+      particleSizeMax: 2,
+      particleSpeed: 0.1,
       liveEffect: LiveEffect.stars,
     ),
     'healing-garden': const ModuleTheme(
@@ -205,6 +241,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(74, 222, 128, 0.15),
       particleColor: Color(0xFFF2C14E),
       particleCount: 8,
+      particleSizeMin: 3,
+      particleSizeMax: 5,
+      particleSpeed: 0.15,
       liveEffect: LiveEffect.fireflies,
     ),
     'innercompass': const ModuleTheme(
@@ -221,6 +260,9 @@ class ModuleThemes {
       cardBorder: Color.fromRGBO(236, 72, 153, 0.2),
       particleColor: Color(0xFFFBCFE8),
       particleCount: 30,
+      particleSizeMin: 2,
+      particleSizeMax: 5,
+      particleSpeed: 0.15,
       liveEffect: LiveEffect.petals,
     ),
   };

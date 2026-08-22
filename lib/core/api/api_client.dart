@@ -13,7 +13,7 @@ class ApiClient {
   ApiClient._();
 
   static Future<ApiClient> getInstance() async {
-    _instance ??= ApiClient._().._dio = Dio(); // placeholder
+    _instance ??= ApiClient._();
     if (!_instance!._initialized) await _instance!._init();
     return _instance!;
   }

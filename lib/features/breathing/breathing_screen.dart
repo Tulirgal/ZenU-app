@@ -180,6 +180,7 @@ class _BreathingScreenState extends State<BreathingScreen> {
   Widget _buildQuickSession() {
     final pattern = _patterns[0]; // Box Breathing
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFFD3DFE2).withValues(alpha: 0.8), // Sage/blueish background from screenshot

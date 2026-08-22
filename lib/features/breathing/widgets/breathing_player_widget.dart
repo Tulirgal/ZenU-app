@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../core/auth/auth_service.dart';
 import '../../../core/theme/zen_tokens.dart';
+import '../../../shared/widgets/module_background.dart';
 import '../breathing_screen.dart'; // For BreathingPattern class
 
 class BreathingPlayerWidget extends StatefulWidget {
@@ -130,17 +131,20 @@ class _BreathingPlayerWidgetState extends State<BreathingPlayerWidget> with Tick
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ZenTokens.zenBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: Center(
-                child: _buildOrb(),
+      body: ModuleBackground(
+        moduleKey: 'breathing',
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: Center(
+                  child: _buildOrb(),
+                ),
               ),
-            ),
-            _buildControls(),
-          ],
+              _buildControls(),
+            ],
+          ),
         ),
       ),
     );

@@ -165,32 +165,12 @@ class _BreathingScreenState extends State<BreathingScreen> {
               Text(
                 'A few slow breaths can change the way this moment feels.',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                   color: ZenTokens.zenFgMuted,
-                  height: 1.5,
                 ),
               ),
             ],
-          ),
-        ),
-        // Panda Avatar Placeholder (Using an asset if available, else a colored circle)
-        Container(
-          width: 80,
-          height: 80,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFF1E293B),
-          ),
-          child: ClipOval(
-            child: Image.asset(
-              'assets/panda/idle.png', // Or whatever valid panda asset exists
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.favorite_rounded,
-                color: Colors.pinkAccent,
-                size: 32,
-              ),
-            ),
           ),
         ),
       ],
@@ -220,12 +200,11 @@ class _BreathingScreenState extends State<BreathingScreen> {
           final content = [
             const PatternMotifVisual(size: 80, isActive: true),
             const SizedBox(width: 24, height: 24),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'QUICK SESSION FOR YOU',
+            Column(
+              crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'QUICK SESSION FOR YOU',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -243,15 +222,14 @@ class _BreathingScreenState extends State<BreathingScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${pattern.steps.join(' · ')}  ·  ${pattern.defaultMinutes} min',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: ZenTokens.zenFgMuted,
-                    ),
+                Text(
+                  '${pattern.steps.join(' · ')}  ·  ${pattern.defaultMinutes} min',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: ZenTokens.zenFgMuted,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
             const SizedBox(width: 24, height: 24),
             FilledButton(
@@ -282,7 +260,15 @@ class _BreathingScreenState extends State<BreathingScreen> {
           ];
 
           if (isDesktop) {
-            return Row(children: content);
+            return Row(
+              children: [
+                content[0],
+                content[1],
+                Expanded(child: content[2]),
+                content[3],
+                content[4],
+              ],
+            );
           } else {
             return Column(
               children: [

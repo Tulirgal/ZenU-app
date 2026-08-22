@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../models/doodle_stroke.dart';
+import '../utils/flood_fill.dart';
 
 class SymmetryCanvas extends StatefulWidget {
   final DoodleToolType currentTool;
@@ -101,22 +102,62 @@ class SymmetryCanvasState extends State<SymmetryCanvas> {
     });
   }
 
+  bool _isFilling = false;
+
+  Future<void> _handleFloodFill(Offset touchPoint) async {
+    if (_isFilling) return;
+    setState(() => _isFilling = true);
+
+    try {
+      final RenderBox box = context.findRenderObject() as RenderBox;
+      final size = box.size;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, size.width, size.height));
+      
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = const Color(0xFFFCFCFC));
+      
+      final painter = SymmetryPainter(
+        strokes: strokes,
+        activeStroke: null,
+        showGuides: false,
+      );
+      painter.paint(canvas, size);
+      
+      final picture = recorder.endRecording();
+
+      final ui.Image? fillImage = await FloodFillUtils.computeSymmetricFloodFill(
+        picture: picture,
+        size: size,
+        touchPoint: touchPoint,
+        fillColor: widget.currentColor,
+      );
+
+      if (fillImage != null && mounted) {
+        setState(() {
+          strokes.add(DoodleStroke(
+            points: [touchPoint],
+            color: widget.currentColor,
+            size: 0,
+            toolType: DoodleToolType.fill,
+            image: fillImage,
+          ));
+          _redoStack.clear();
+          _markDrawn();
+          widget.onStrokeCommit?.call(strokes.length);
+          widget.controller.notifyListeners();
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isFilling = false);
+    }
+  }
+
   void _onPanStart(DragStartDetails details) {
     RenderBox box = context.findRenderObject() as RenderBox;
     final localPosition = box.globalToLocal(details.globalPosition);
 
     if (widget.currentTool == DoodleToolType.fill) {
-      // Add a fill stroke which covers the entire canvas.
-      setState(() {
-        strokes.add(DoodleStroke(
-          points: [const Offset(0, 0)], // Dummy point
-          color: widget.currentColor,
-          size: 0,
-          toolType: DoodleToolType.fill,
-        ));
-        _redoStack.clear();
-        _markDrawn();
-      });
+      _handleFloodFill(localPosition);
       return;
     }
 
@@ -195,13 +236,24 @@ class SymmetryCanvasState extends State<SymmetryCanvas> {
           color: const Color(0xFFFCFCFC), // hsl(40, 40%, 99%)
           child: Stack(
             children: [
-              CustomPaint(
-                size: Size.infinite,
-                painter: SymmetryPainter(
-                  strokes: strokes,
-                  activeStroke: _activeStroke,
-                  showGuides: widget.showGuides,
-                ),
+              Stack(
+                children: [
+                  CustomPaint(
+                    size: Size.infinite,
+                    painter: SymmetryPainter(
+                      strokes: strokes,
+                      activeStroke: _activeStroke,
+                      showGuides: widget.showGuides,
+                    ),
+                  ),
+                  if (_isFilling)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFCBD5E1)),
+                      ),
+                    ),
+                ],
               ),
               if (!_hasDrawn && strokes.isEmpty)
                 const Center(
@@ -248,10 +300,15 @@ class SymmetryPainter extends CustomPainter {
 
     void drawStroke(DoodleStroke stroke) {
       if (stroke.toolType == DoodleToolType.fill) {
-        final paint = Paint()
-          ..color = stroke.color
-          ..style = PaintingStyle.fill;
-        canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+        if (stroke.image != null) {
+          canvas.drawImage(stroke.image!, Offset.zero, Paint());
+        } else {
+          // Fallback if image generation failed (or old strokes)
+          final paint = Paint()
+            ..color = stroke.color
+            ..style = PaintingStyle.fill;
+          canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+        }
         return;
       }
 
